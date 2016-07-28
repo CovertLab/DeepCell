@@ -1667,7 +1667,7 @@ def segment_image_w_morphsnakes(img, nuc_label, num_iters, smoothing = 2):
 Helper functions for segmentation
 """
 
-def segment_nuclei(img = None, save = True, load_from_direc = None, feature_to_load = "feature_1", mask_location = None, threshold = 0.8, area_threshold = 50, eccentricity_threshold = 1, solidity_threshold = 0):
+def segment_nuclei(img = None, save = True, color_image = False, load_from_direc = None, feature_to_load = "feature_1", mask_location = None, threshold = 0.8, area_threshold = 50, eccentricity_threshold = 1, solidity_threshold = 0):
 	# Requires a 4 channel image (number of frames, number of features, image width, image height)
 
 	if load_from_direc is None:
@@ -1703,6 +1703,21 @@ def segment_nuclei(img = None, save = True, load_from_direc = None, feature_to_l
 		if save:
 			img_name = os.path.join(mask_location, "nuclear_mask_" + str(frame) + ".png")
 			tiff.imsave(img_name,nuclear_mask)
+
+		if color_image:
+			img_name = os.path.join(mask_location, "nuclear_colorimg_" + str(frame) + ".png")
+			
+			from skimage.segmentation import find_boundaries
+			import palettable
+			from skimage.color import label2rgb
+
+			seg = label(nuclear_mask)
+			bound = find_boundaries(seg, background = 0)
+
+			image_label_overlay = label2rgb(seg, bg_label = 0, bg_color = (0.8,0.8,0.8), colors = palettable.colorbrewer.sequential.YlGn_9.mpl_colors)
+			image_label_overlay[bound == 1,:] = 0
+
+			scipy.misc.imsave(img_name,np.float32(image_label_overlay))
 	return nuclear_masks
 
 def segment_cytoplasm(img =None, save = True, load_from_direc = None, feature_to_load = "feature_1", color_image = False, nuclear_masks = None, mask_location = None, smoothing = 1, num_iters = 80):
