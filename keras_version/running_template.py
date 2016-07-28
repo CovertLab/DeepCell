@@ -20,7 +20,7 @@ import numpy as np
 """
 Load data
 """
-direc_name = '/home/vanvalen/DeepCell2/testing_data/BMDM/set2'
+direc_name = '/home/vanvalen/DeepCell2/testing_data/Nuclei/set3'
 data_location = os.path.join(direc_name, 'RawImages')
 cyto_location = os.path.join(direc_name, 'Cytoplasm')
 nuclear_location = os.path.join(direc_name, 'Nuclear')
@@ -29,10 +29,10 @@ mask_location = os.path.join(direc_name, 'Masks')
 cyto_channel_names = ['Phase', 'DAPI']
 nuclear_channel_names = ['DAPI']
 
-trained_network_cyto_directory = "/home/vanvalen/DeepCell2/trained_networks/BMDM"
+trained_network_cyto_directory = "/home/vanvalen/DeepCell2/trained_networks/MCF10A"
 trained_network_nuclear_directory = "/home/vanvalen/DeepCell2/trained_networks/Nuclear"
 
-cyto_prefix = "2016-07-13_BMDM_61x61_bn_feature_net_61x61_BMDM_"
+cyto_prefix = "2016-07-11_MCF10A_61x61_bn_feature_net_61x61_"
 nuclear_prefix = "2016-07-12_nuclei_all_61x61_bn_feature_net_61x61_"
 
 win_cyto = 30
@@ -60,9 +60,9 @@ for j in xrange(5):
 Run model on directory
 """
 
-cytoplasm_predictions = run_models_on_directory(data_location, cyto_channel_names, cyto_location, n_features = 3, model_fn = cyto_fn, 
-	list_of_weights = list_of_cyto_weights, image_size_x = image_size_x, image_size_y = image_size_y, 
-	win_x = win_cyto, win_y = win_cyto, std = False, split = False)
+# cytoplasm_predictions = run_models_on_directory(data_location, cyto_channel_names, cyto_location, n_features = 3, model_fn = cyto_fn, 
+# 	list_of_weights = list_of_cyto_weights, image_size_x = image_size_x, image_size_y = image_size_y, 
+# 	win_x = win_cyto, win_y = win_cyto, std = False, split = False)
 
 nuclear_predictions = run_models_on_directory(data_location, nuclear_channel_names, nuclear_location, model_fn = nuclear_fn, 
 	list_of_weights = list_of_nuclear_weights, image_size_x = image_size_x, image_size_y = image_size_y, 
@@ -72,8 +72,8 @@ nuclear_predictions = run_models_on_directory(data_location, nuclear_channel_nam
 Refine segmentation with active contours
 """
 
-nuclear_masks = segment_nuclei(img = nuclear_predictions, load_from_direc = None, mask_location = mask_location, threshold = 0.5, area_threshold = 50, solidity_threshold = 0.75, eccentricity_threshold = 1)
-cytoplasm_masks = segment_cytoplasm(img = cytoplasm_predictions, load_from_direc = None, color_image = True, nuclear_masks = nuclear_masks, mask_location = mask_location, smoothing = 1, num_iters = 120)
+nuclear_masks = segment_nuclei(img = nuclear_predictions, color_image = True, load_from_direc = None, mask_location = mask_location, threshold = 0.75, area_threshold = 100, solidity_threshold = 0.75, eccentricity_threshold = 0.95)
+# cytoplasm_masks = segment_cytoplasm(img = cytoplasm_predictions, load_from_direc = None, color_image = True, nuclear_masks = nuclear_masks, mask_location = mask_location, smoothing = 1, num_iters = 120)
 
 
 """
