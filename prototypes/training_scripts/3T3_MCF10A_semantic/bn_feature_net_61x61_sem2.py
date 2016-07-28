@@ -19,14 +19,14 @@ n_classes = 3
 n_epoch = 25
 
 model = the_model(n_channels = 2, n_features = 4, reg=1e-5)
-dataset = "MCF10A_3T3_semantic_61x61"
+dataset = "MCF10A_3T3_all_semantic_61x61"
 direc_save = "/home/nquach/DeepCell2/trained_networks/"
-direc_data = "/home/nquach/DeepCell2/training_data_npz/"
+direc_data = "/home/nquach/DeepCell2/training_data_npz/MCF10A_3T3_semantic"
 optimizer = SGD(lr=0.01, decay=1e-6, momentum = 0.9, nesterov=True)
 lr_sched = rate_scheduler(lr = 0.01, decay = 0.95)
-expt = "bn_feature_net_61x61_semantic"
+expt = "bn_feature_net_61x61_semantic_all"
 
-iterate = 2
+iterate = 1
 train_model_sample(model = model, dataset = dataset, optimizer = optimizer, 
 	expt = expt, it = iterate, batch_size = batch_size, n_epoch = n_epoch,
 	direc_save = direc_save, 
