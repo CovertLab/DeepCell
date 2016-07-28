@@ -26,8 +26,8 @@ cyto_location = os.path.join(direc_name, 'Cytoplasm')
 nuclear_location = os.path.join(direc_name, 'Nuclear')
 mask_location = os.path.join(direc_name, 'Masks')
 
-cyto_channel_names = ['Phase', 'DAPI']
-nuclear_channel_names = ['DAPI']
+cyto_channel_names = ['Phase', 'Far-red']
+nuclear_channel_names = ['Far-red']
 
 trained_network_cyto_directory = "/home/vanvalen/DeepCell2/trained_networks/MCF10A"
 trained_network_nuclear_directory = "/home/vanvalen/DeepCell2/trained_networks/Nuclear"
