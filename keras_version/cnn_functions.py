@@ -1682,7 +1682,7 @@ def segment_image_w_morphsnakes(img, nuc_label, num_iters, smoothing = 2):
 Helper functions for segmentation
 """
 
-def segment_nuclei(img = None, save = True, adaptive = True, color_image = False, load_from_direc = None, feature_to_load = "feature_1", mask_location = None, threshold = 0.5, area_threshold = 50, eccentricity_threshold = 1, solidity_threshold = 0):
+def segment_nuclei(img = None, save = True, adaptive = False, color_image = False, load_from_direc = None, feature_to_load = "feature_1", mask_location = None, threshold = 0.5, area_threshold = 50, eccentricity_threshold = 1, solidity_threshold = 0):
 	# Requires a 4 channel image (number of frames, number of features, image width, image height)
 	from skimage.filters import threshold_otsu, threshold_adaptive
 
