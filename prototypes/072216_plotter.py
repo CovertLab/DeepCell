@@ -5,11 +5,11 @@ import matplotlib as mpl
 import seaborn as sns
 mpl.rcParams['pdf.fonttype'] = 42
 
-h1 = np.load('/home/nquach/DeepCell2/trained_networks/MCF10A_3T3_semantic/2016-07-28_MCF10A_3T3_all_semantic_61x61_bn_feature_net_61x61_semantic_all_0.npz')['loss_history'][()]
-h2 = np.load('/home/nquach/DeepCell2/trained_networks/MCF10A_3T3_semantic/2016-07-28_MCF10A_3T3_all_semantic_61x61_bn_feature_net_61x61_semantic_all_1.npz')['loss_history'][()]
-h3 = np.load('/home/nquach/DeepCell2/trained_networks/MCF10A_3T3_semantic/2016-07-28_MCF10A_3T3_all_semantic_61x61_bn_feature_net_61x61_semantic_all_2.npz')['loss_history'][()]
-h4 = np.load('/home/nquach/DeepCell2/trained_networks/MCF10A_3T3_semantic/2016-07-28_MCF10A_3T3_all_semantic_61x61_bn_feature_net_61x61_semantic_all_3.npz')['loss_history'][()]
-h5 = np.load('/home/nquach/DeepCell2/trained_networks/MCF10A_3T3_semantic/2016-07-28_MCF10A_3T3_all_semantic_61x61_bn_feature_net_61x61_semantic_all_4.npz')['loss_history'][()]
+h1 = np.load('/home/nquach/DeepCell2/trained_networks/ecoli/ecoli_kc/2016-07-20_ecoli_kc_61x61_bn_feature_net_61x61_0.npz')['loss_history'][()]
+h2 = np.load('/home/nquach/DeepCell2/trained_networks/ecoli/ecoli_kc/2016-07-20_ecoli_kc_61x61_bn_feature_net_61x61_1.npz')['loss_history'][()]
+h3 = np.load('/home/nquach/DeepCell2/trained_networks/ecoli/ecoli_kc/2016-07-20_ecoli_kc_61x61_bn_feature_net_61x61_2.npz')['loss_history'][()]
+h4 = np.load('/home/nquach/DeepCell2/trained_networks/ecoli/ecoli_kc/2016-07-20_ecoli_kc_61x61_bn_feature_net_61x61_3.npz')['loss_history'][()]
+h5 = np.load('/home/nquach/DeepCell2/trained_networks/ecoli/ecoli_kc/2016-07-20_ecoli_kc_61x61_bn_feature_net_61x61_4.npz')['loss_history'][()]
 
 e1 = np.subtract(1, h1['acc'])
 e2 = np.subtract(1, h2['acc'])
@@ -29,7 +29,7 @@ vstack = np.stack([v1, v2, v3, v4, v5], axis=0)
 vmu = np.mean(vstack, axis=0)
 vs = np.std(vstack, axis=0)
 
-epoch = np.arange(1, 26, 1)
+epoch = np.arange(1, len(e1)+1, 1)
 
 sns.set_style("white")
 solid = mlines.Line2D([], [], color='black', linestyle = '-', label = 'Training')
@@ -40,8 +40,8 @@ plt.plot(epoch, e1, 'k-', epoch, v1, 'k--', epoch, e2, 'k-', epoch, v2, 'k--', e
 plt.xlabel('Epoch')
 plt.ylabel('Error')
 plt.legend(handles=[solid,dashed])
-plt.title('Training and validation error: MCF10A-3T3 semantic')
-filename = '/home/nquach/DeepCell2/prototypes/plots/072916_plots/bn_feature_net_61x61_MCF10A_3T3.pdf'
+plt.title('Training and validation error: E. coli KC')
+filename = '/home/nquach/DeepCell2/prototypes/plots/073016_plots/bn_feature_net_61x61_ecoli_kc.pdf'
 plt.savefig(filename, format = 'pdf')
 plt.close()
 
@@ -50,8 +50,8 @@ plt.errorbar(epoch, emu, yerr = es, ls = '-', color=(0.835,0.369,0))
 plt.errorbar(epoch, vmu, yerr = vs, ls= '--', color=(0.835,0.369,0))
 plt.xlabel('Epoch')
 plt.ylabel('Error')
-plt.title('Average training and validation error: MCF10A-3T3 semantic')
+plt.title('Average training and validation error: E. coli KC')
 plt.legend(['training','validation'], loc='upper right')
-filename = '/home/nquach/DeepCell2/prototypes/plots/072916_plots/bn_feature_net_61x61_ave_MCF10A_3T3.pdf'
+filename = '/home/nquach/DeepCell2/prototypes/plots/073016_plots/bn_feature_net_61x61_ave_ecoli_kc.pdf'
 plt.savefig(filename, format='pdf')
 plt.close()
