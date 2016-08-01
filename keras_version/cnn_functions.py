@@ -33,12 +33,18 @@ import h5py
 import datetime
 
 from skimage.measure import label, regionprops
+from skimage.segmentation import clear_border
 from scipy.ndimage.morphology import binary_fill_holes
 from skimage import morphology as morph
 from pywt import WaveletPacket2D
 from skimage.transform import resize
 from numpy.fft import fft2, ifft2, fftshift
 from skimage.io import imread
+from skimage.filters import threshold_otsu
+from munkres import munkres as munkres_lap
+from hungarian import lap
+import skimage as sk
+from sklearn.utils.linear_assignment_ import linear_assignment
 
 from theano.tensor.nnet import conv
 from theano.tensor.signal.pool import pool_2d
@@ -105,6 +111,16 @@ def set_weights(model, weights_path):
 
 	return model
 
+def form_coord(x,y,sample_image):
+	numrows, numcols = sample_image.shape
+	col = int(x+0.5)
+	row = int(y+0.5)
+	if col>= 0 and col<numcols and row>=0 and row<numrows:
+		z = sample_image[row,col]
+		return 'x=%1.4f, y=%1.4f, z=%1.4f'%(x,y,z)
+	else:
+		return 'x=%1.4f, y=1.4%f'%(x,y)
+
 def rotate_array_0(arr):
 	return arr
 
@@ -123,7 +139,7 @@ def rotate_array_270(arr):
 	return arr[tuple(slices)].transpose(axes_order)
 
 def categorical_sum(y_true, y_pred):
-    return K.sum(K.equal(K.argmax(y_true, axis=-1), K.argmax(y_pred*0, axis=-1)))
+	return K.sum(K.equal(K.argmax(y_true, axis=-1), K.argmax(y_pred*0, axis=-1)))
 
 def rate_scheduler(lr = .001, decay = 0.95):
 	def output_fn(epoch):
@@ -1383,7 +1399,6 @@ def get_images_from_directory(data_location, channel_names):
 	return all_images
 
 def run_model(image, model, win_x = 30, win_y = 30, std = False, split = True, process = True):
-
 	if process:
 		for j in xrange(image.shape[1]):
 			image[0,j,:,:] = process_image(image[0,j,:,:], win_x, win_y, std)
@@ -1667,8 +1682,9 @@ def segment_image_w_morphsnakes(img, nuc_label, num_iters, smoothing = 2):
 Helper functions for segmentation
 """
 
-def segment_nuclei(img = None, save = True, color_image = False, load_from_direc = None, feature_to_load = "feature_1", mask_location = None, threshold = 0.8, area_threshold = 50, eccentricity_threshold = 1, solidity_threshold = 0):
+def segment_nuclei(img = None, save = True, adaptive = True, color_image = False, load_from_direc = None, feature_to_load = "feature_1", mask_location = None, threshold = 0.5, area_threshold = 50, eccentricity_threshold = 1, solidity_threshold = 0):
 	# Requires a 4 channel image (number of frames, number of features, image width, image height)
+	from skimage.filters import threshold_otsu, threshold_adaptive
 
 	if load_from_direc is None:
 		img = img[:,1,:,:]
@@ -1686,8 +1702,18 @@ def segment_nuclei(img = None, save = True, color_image = False, load_from_direc
 
 	for frame in xrange(img.shape[0]):
 		interior = img[frame,:,:]
-		nuclear_mask = np.float32(interior > threshold)
+		if adaptive:
+			block_size = 61
+			nuclear_mask = np.float32(threshold_adaptive(interior, block_size, method = 'median', offset = -.075))
+		else: 
+			nuclear_mask = np.float32(interior > threshold)
 		nuc_label = label(nuclear_mask)
+		max_cell_id = np.amax(nuc_label)
+		for cell_id in xrange(1,max_cell_id + 1):
+			img_new = nuc_label == cell_id
+			img_fill = binary_fill_holes(img_new)
+			nuc_label[img_fill == 1] = cell_id
+
 		region_temp = regionprops(nuc_label)
 
 		for region in region_temp:
@@ -1808,6 +1834,7 @@ def dice_jaccard_indices(mask, val, nuc_mask):
 		best_mask_prop = mask_region[0]
 		best_overlap = 0
 		best_sum = 0
+		best_union = 0
 
 		for mask_prop in mask_region:
 			temp = mask_prop['coords'].tolist()
@@ -1825,14 +1852,15 @@ def dice_jaccard_indices(mask, val, nuc_mask):
 		jac = np.float32(best_overlap)/np.float32(best_union)
 		dice = np.float32(best_overlap)*2/best_sum
 
-		jac_list += [jac]
-		dice_list += [dice]
+		if np.isnan(jac) == 0 and np.isnan(dice) == 0:
+			jac_list += [jac]
+			dice_list += [dice]
 
 	JI = np.mean(jac_list)
 	DI = np.mean(dice_list)
-
-	print "Jaccard index is " + str(JI) + " +/- " + str(np.std(jac_list)/np.sqrt(len(jac_list)))
-	print "Dice index is " + str(DI)  + " +/- " + str(np.std(dice_list)/np.sqrt(len(dice_list)))
+	print jac_list, dice_list
+	print "Jaccard index is " + str(JI) + " +/- " + str(np.std(jac_list))
+	print "Dice index is " + str(DI)  + " +/- " + str(np.std(dice_list))
 
 	return JI, DI
 
@@ -1840,32 +1868,32 @@ def dice_jaccard_indices(mask, val, nuc_mask):
 Functions for tracking bacterial cells from frame to frame
 """
 
-def create_masks(direc_name, direc_save_mask, direc_save_region, area_threshold = 30, eccen_threshold = 0.1, clear_borders = 0):
+def create_masks(direc_name, direc_save_mask, direc_save_region, win = 15, area_threshold = 30, eccen_threshold = 0.1, clear_borders = 0):
 
-	imglist_int = nikon_getfiles(direc_name,'interior')
-	imglist_back = nikon_getfiles(direc_name,'background')
-	imglist_bound = nikon_getfiles(direc_name,'boundary')
+	imglist_int = nikon_getfiles(direc_name,'feature_1')
+	imglist_back = nikon_getfiles(direc_name,'feature_2')
+	imglist_bound = nikon_getfiles(direc_name,'feature_0')
 	num_of_files = len(imglist_int)
 
 	# Create masks of chunks
 	iterations = 0
-	cnn_int_name = direc_name + imglist_int[iterations]
-	mask_interior = get_image(cnn_int_name)
+	cnn_int_name = os.path.join(direc_name, imglist_int[iterations])
+	mask_interior = get_image(cnn_int_name)[win:-win,win:-win]
 	mask_sum = np.zeros(mask_interior.shape)
 	mask_save = np.zeros((num_of_files,mask_interior.shape[0],mask_interior.shape[1]))
 
 	for iterations in xrange(num_of_files):
 
-		cnn_int_name = direc_name + imglist_int[iterations]
-		cnn_back_name = direc_name + imglist_back[iterations]
-		cnn_bound_name = direc_name + imglist_bound[iterations]
+		cnn_int_name = os.path.join(direc_name, imglist_int[iterations])
+		cnn_back_name = os.path.join(direc_name, imglist_back[iterations])
+		cnn_bound_name = os.path.join(direc_name, imglist_bound[iterations])
 
-		mask_interior = get_image(cnn_int_name)
-		mask_background = get_image(cnn_back_name)
-		mask_boundary = get_image(cnn_bound_name)
+		mask_interior = get_image(cnn_int_name)[win:-win,win:-win]
+		mask_background = get_image(cnn_back_name)[win:-win,win:-win]
+		mask_boundary = get_image(cnn_bound_name)[win:-win,win:-win]
 
 		thresh = threshold_otsu(mask_interior)
-		mask_interior_thresh = np.float32((mask_interior>(5*mask_boundary))*(mask_interior>mask_background))
+		mask_interior_thresh = np.float32(mask_interior>0.6)
 
 		# Screen cell size
 		mask_interior_label = label(mask_interior_thresh)
@@ -1902,13 +1930,13 @@ def create_masks(direc_name, direc_save_mask, direc_save_region, area_threshold 
 
 	num_of_chunks = np.amax(markers) + 1
 
-	# fig,ax = plt.subplots(1,1)
-	# ax.imshow(markers,cmap=plt.cm.gray,interpolation='nearest')
-	# def form_coord(x,y):
-	#     return cf.format_coord(x,y,markers)
-	# ax.format_coord = form_coord
+	fig,ax = plt.subplots(1,1)
+	ax.imshow(markers,cmap=plt.cm.gray,interpolation='nearest')
+	def f_coord(x,y):
+		return form_coord(x,y,markers)
+	ax.format_coord = f_coord
 
-	# plt.show()
+	plt.show()
 
 	regions_save = []
 
@@ -1919,7 +1947,9 @@ def create_masks(direc_name, direc_save_mask, direc_save_region, area_threshold 
 		for iterations in xrange(num_of_files):
 			mask_interior_thresh = mask_save[iterations,:,:] * chunk_mask
 			mask_interior_label = label(mask_interior_thresh)
-
+			if chunk == 5:
+				file_name_save = 'chunk_5_' + str(iterations) + '.tif'
+				tiff.imsave(direc_save_mask + file_name_save, np.float32(mask_interior_label))
 			# Obtain region properties
 			regions.append(regionprops(mask_interior_label))
 
@@ -1927,9 +1957,11 @@ def create_masks(direc_name, direc_save_mask, direc_save_region, area_threshold 
 
 	# Save region properties
 	file_name_save = 'regions_save.npz'
-	np.savez(direc_save_region+file_name_save, regions_save=regions_save)
+	np.savez(os.path.join(direc_save_region,file_name_save), regions_save=regions_save)
 
-def crop_images(direc_name, channel_names, direc_save, window_size_x = 10, window_size_y = 10):
+	return None
+
+def crop_images(direc_name, channel_names, direc_save, window_size_x = 15, window_size_y = 15):
 	imglist = []
 	for j in xrange(len(channel_names)):
 		imglist.append(nikon_getfiles(direc_name,channel_names[j]))
@@ -1941,20 +1973,18 @@ def crop_images(direc_name, channel_names, direc_save, window_size_x = 10, windo
 
 			tiff.imsave(direc_save + imglist[i][j], im_crop)
 
-def align_images(direc_name, channel_names,direc_save,crop_window = 950):
+def align_images(direc_name, channel_names, direc_save,crop_window = 950):
 	# Make sure the first member of channel name is the phase image
 	imglist = []
 	for j in xrange(len(channel_names)):
 		imglist.append(nikon_getfiles(direc_name,channel_names[j]))
 
 	for j in xrange(len(imglist[0])-1):
+		im0_name = os.path.join(direc_name, imglist[0][j])
+		im1_name = os.path.join(direc_name, imglist[0][j+1])
 
-		if '.tif' in imglist[0][j]:
-			im0 = np.float32(tiff.TIFFfile(direc_name + imglist[0][j]).asarray())
-			im1 = np.float32(tiff.TIFFfile(direc_name + imglist[0][j+1]).asarray())
-		else:
-			im0 = np.float32(imread(direc_name + imglist[0][j]))
-			im1 = np.float32(imread(direc_name + imglist[0][j+1]))
+		im0 = get_image(im0_name)
+		im1 = get_image(im1_name)
 
 		image_size_x = im0.shape[0]
 		image_size_y = im0.shape[1]
@@ -1979,24 +2009,30 @@ def align_images(direc_name, channel_names,direc_save,crop_window = 950):
 		im1_save = im1_crop[25 - t0: -25 - t0, 25 - t1: -25 -t1]
 
 		if j == 0:
-			tiff.imsave(direc_save + channel_names[0] +'_aligned_' + str(j) + '.tif', im0_save)
+			im_name = os.path.join(direc_save, channel_names[0] +'_aligned_' + str(j) + '.tif')
+			tiff.imsave(im_name , im0_save)
 			# Load, shift, and save fluorescence channels
 			for i in xrange(1,len(channel_names)):
 				im = get_image(direc_name + imglist[i][j])
 				im_crop = im[x_index : x_index + crop_window, y_index : y_index + crop_window]
 				im_save = im_crop[25:-25,25:-25]
-				tiff.imsave(direc_save + channel_names[i] + '_aligned_' + str(j) + '.tif', im_save)
-			print '... Aligned frame ' + str(j+1) + ' of ' + str(len(imglist[0])) + '\r',
+				im_name = os.path.join(direc_save, channel_names[i] +'_aligned_' + str(j) + '.tif')
+				tiff.imsave(im_name, im_save)
+			# print '... Aligned frame ' + str(j+1) + ' of ' + str(len(imglist[0])) + '\r',
 
 		tiff.imsave(direc_save + channel_names[0] + '_aligned_' + str(j+1) + '.tif', im1_save)
+		
 		# Load, shift, and save fluorescence channels
 		for i in xrange(1,len(channel_names)):
 			im = get_image(direc_name + imglist[i][j+1])
 			im_crop = im[x_index : x_index + crop_window, y_index : y_index + crop_window]
 			im_save = im_crop[25 - t0:-25 - t0, 25 - t1:-25 - t1]
-			tiff.imsave(direc_save + channel_names[i] + '_aligned_' + str(j+1) + '.tif', im_save)
+			im_name = os.path.join(direc_save, channel_names[i] +'_aligned_' + str(j) + '.tif')
 
-		print '... Aligned frame ' + str(j+2) + ' of ' + str(len(imglist[0])) + '\r',
+			tiff.imsave(im_name, im_save)
+
+		# print '... Aligned frame ' + str(j+2) + ' of ' + str(len(imglist[0])) + '\r',
+	return None
 
 def make_cost_matrix(region_1, region_2, frame_numbers, direc_save, birth_cost = 5000, death_cost = 50000, no_division_cost = 100):
 	N_1 = len(region_1)
@@ -2047,7 +2083,7 @@ def cost_function_centroid(cell1, cell2, max_dist = 20):
 		temp = np.Inf
 	return temp
 
-def cost_function_overlap(cell1,cell2, max_dist = 20):
+def cost_function_overlap(cell1,cell2, max_dist = 50):
 	internal_points_1 = cell1['coords'].tolist()
 	internal_points_2 = cell2['coords'].tolist()
 
@@ -2141,10 +2177,13 @@ def cost_function_overlap_daughter(cell1,cell2, max_dist = 20):
 	return cost
 
 def run_LAP(cost_matrix, N_1, N_2):
-	# x,y = lap(cost_matrix)
-	# assignment = linear_assignment(cost_matrix)
+	from scipy.optimize import linear_sum_assignment as scipy_lap
+	# assignment = scipy_lap(cost_matrix)
 	# x = assignment[:, 0]
 	# y = assignment[:, 1]
+
+	# x = assignment[0]
+	# y = assignment[1]
 
 	# binaryAssign = np.zeros(cost_matrix.shape, bool)
 	# binaryAssign[x, y] = True
@@ -2156,20 +2195,20 @@ def run_LAP(cost_matrix, N_1, N_2):
 	return idx + 1, idy + 1
 
 def cell(prop, frame):
-    cell = {}
-    cell['area'] = prop['area']
-    cell['xcentroid'] = prop['centroid'][1]
-    cell['ycentroid'] = prop['centroid'][0]
-    cell['coords'] = prop['coords']
-    cell['length'] = prop['major_axis_length']
-    cell['width'] = prop['minor_axis_length']
-    cell['orientation'] = prop['orientation']
-    cell['cellId'] = prop['label']
-    cell['trackId'] = np.nan # once a cell has been assigned to a track, change this to the track's number
-    cell['tracked'] = np.nan  # once there is an object, change this into 0
-    cell['parentId'] = np.nan
-    cell['frame'] = frame
-    return cell
+	cell = {}
+	cell['area'] = prop['area']
+	cell['xcentroid'] = prop['centroid'][1]
+	cell['ycentroid'] = prop['centroid'][0]
+	cell['coords'] = prop['coords']
+	cell['length'] = prop['major_axis_length']
+	cell['width'] = prop['minor_axis_length']
+	cell['orientation'] = prop['orientation']
+	cell['cellId'] = prop['label']
+	cell['trackId'] = np.nan # once a cell has been assigned to a track, change this to the track's number
+	cell['tracked'] = np.nan  # once there is an object, change this into 0
+	cell['parentId'] = np.nan
+	cell['frame'] = frame
+	return cell
 
 def cell_linker_init(region_1, frame):
 	# This function intializes the tracks for the first image
@@ -2202,7 +2241,6 @@ def cell_linker(region_1, region_2, tracks, frame_numbers, direc_save):
 
 	# Run LAP
 	assigned_1, assigned_2 = run_LAP(cost_matrix, N_1, N_2)
-	# print assigned_1, assigned_2
 
 
 	# Add assigned cells to tracks
@@ -2327,7 +2365,7 @@ def plot_lineage(list_of_cells, tracks, image_size):
 
 		ax[0,frame_number].imshow(image_label_overlay, interpolation = 'nearest')
 		def form_coord(x,y):
-		    return cf.format_coord(x,y,label_image[:,:])
+			return cf.format_coord(x,y,label_image[:,:])
 		ax[0,frame_number].format_coord = form_coord
 		ax[0,frame_number].axes.get_xaxis().set_visible(False)
 		ax[0,frame_number].axes.get_yaxis().set_visible(False)
@@ -2335,7 +2373,7 @@ def plot_lineage(list_of_cells, tracks, image_size):
 
 		ax[1,frame_number].imshow(all_cell_image, interpolation = 'nearest')
 		def form_coord(x,y):
-		    return cf.format_coord(x,y,all_cell_image[:,:])
+			return cf.format_coord(x,y,all_cell_image[:,:])
 		ax[1,frame_number].format_coord = form_coord
 		ax[1,frame_number].axes.get_xaxis().set_visible(False)
 		ax[1,frame_number].axes.get_yaxis().set_visible(False)
@@ -2409,7 +2447,7 @@ def plot_lineage_numbers(list_of_cells, tracks, image_size):
 
 			ax[1,frame_number].imshow(all_cell_image, cmap = plt.cm.gray,  interpolation = 'nearest')
 			def form_coord(x,y):
-			    return cf.format_coord(x,y,all_cell_image[:,:])
+				return cf.format_coord(x,y,all_cell_image[:,:])
 			ax[1,frame_number].format_coord = form_coord
 			ax[1,frame_number].axes.get_xaxis().set_visible(False)
 			ax[1,frame_number].axes.get_yaxis().set_visible(False)

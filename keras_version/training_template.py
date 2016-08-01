@@ -23,9 +23,8 @@ expt = "bn_feature_net_61x61"
 direc_save = "/home/vanvalen/DeepCell2/trained_networks/"
 direc_data = "/home/vanvalen/DeepCell2/training_data_npz/"
 
-# optimizer = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
-optimizer = RMSprop(lr = 0.001)
-lr_sched = rate_scheduler(lr = 0.001, decay = 0.95)
+optimizer = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+lr_sched = rate_scheduler(lr = 0.01, decay = 0.95)
 class_weight = {0:1, 1:1, 2:1, 3:1}
 
 for iterate in xrange(5):
