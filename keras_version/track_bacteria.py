@@ -24,6 +24,9 @@ cropped_dir = os.path.join(direc_name, "Cropped/")
 track_dir = os.path.join(direc_name, "Tracks/")
 cost_dir = os.path.join(direc_name, "Cost_Matrices/")
 
+# Create masks
+# create_masks(direc_name = cnn_save_dir, direc_save_mask = mask_dir, direc_save_region = region_dir, area_threshold = 25, clear_borders = 1)
+
 # Load Regions
 region_file = np.load(os.path.join(region_dir, 'regions_save.npz'))
 regions_save = region_file['regions_save']
@@ -32,9 +35,9 @@ total_no_of_frames = 32
 
 # Load phase images
 list_of_tracks = []
-for chunk in [5]: #xrange(1,len(regions_save)):
+for chunk in xrange(1,len(regions_save)):
 	print chunk
-	tracks = make_tracks(regions = regions_save[chunk], direc_save = track_dir, start_frame = 1, end_frame = 31, direc_cost_save = cost_dir)
+	tracks = make_tracks(regions = regions_save[chunk], direc_save = track_dir, start_frame = 15, end_frame = 30, direc_cost_save = cost_dir)
 	list_of_tracks += [tracks]
 
 file_name_save = 'list_of_tracks'

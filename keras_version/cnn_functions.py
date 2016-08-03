@@ -41,8 +41,6 @@ from skimage.transform import resize
 from numpy.fft import fft2, ifft2, fftshift
 from skimage.io import imread
 from skimage.filters import threshold_otsu
-from munkres import munkres as munkres_lap
-from hungarian import lap
 import skimage as sk
 from sklearn.utils.linear_assignment_ import linear_assignment
 
@@ -52,7 +50,6 @@ from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 from theano.ifelse import ifelse
 
 from keras import backend as K
-#from keras.layers.convolutional import _Pooling2D
 from keras.layers.normalization import BatchNormalization
 from keras.layers import Input, Activation, merge, Dense, Flatten
 from keras.preprocessing.image import random_rotation, random_shift, random_shear, random_zoom, random_channel_shift
@@ -1946,7 +1943,7 @@ def create_masks(direc_name, direc_save_mask, direc_save_region, win = 15, area_
 
 		for iterations in xrange(num_of_files):
 			mask_interior_thresh = mask_save[iterations,:,:] * chunk_mask
-			mask_interior_label = label(mask_interior_thresh)
+			mask_interior_label = label(mask_interior_thresh, background = 0)
 			if chunk == 5:
 				file_name_save = 'chunk_5_' + str(iterations) + '.tif'
 				tiff.imsave(direc_save_mask + file_name_save, np.float32(mask_interior_label))
@@ -2034,7 +2031,7 @@ def align_images(direc_name, channel_names, direc_save,crop_window = 950):
 		# print '... Aligned frame ' + str(j+2) + ' of ' + str(len(imglist[0])) + '\r',
 	return None
 
-def make_cost_matrix(region_1, region_2, frame_numbers, direc_save, birth_cost = 5000, death_cost = 50000, no_division_cost = 100):
+def make_cost_matrix(region_1, region_2, frame_numbers, direc_save, birth_cost = 1e6, death_cost = 1e5, no_division_cost = 100):
 	N_1 = len(region_1)
 	N_2 = len(region_2)
 	cost_matrix = np.zeros((2*N_1+N_2,2*N_1+N_2), dtype = np.double)
@@ -2083,20 +2080,22 @@ def cost_function_centroid(cell1, cell2, max_dist = 20):
 		temp = np.Inf
 	return temp
 
-def cost_function_overlap(cell1,cell2, max_dist = 50):
+def cost_function_overlap(cell1,cell2, max_dist = 15):
 	internal_points_1 = cell1['coords'].tolist()
 	internal_points_2 = cell2['coords'].tolist()
+
+	ip_1 = set([str(x) for x in internal_points_1])
+	ip_2 = set([str(x) for x in internal_points_2])
 
 	area_1 = cell1['area']
 	area_2 = cell2['area']
 
-	centroid_1 = np.asarray(cell1['centroid'])
-	centroid_2 = np.asarray(cell2['centroid'])
+	centroid_1 = np.floor(np.asarray(cell1['centroid']))
+	centroid_2 = np.floor(np.asarray(cell2['centroid']))
 
 	dist = np.sqrt(np.sum((centroid_1-centroid_2) ** 2))
 
 	if dist < max_dist:
-		
 		counter_1 = 0
 		counter_2 = 0
 		for point in internal_points_1:
@@ -2109,38 +2108,36 @@ def cost_function_overlap(cell1,cell2, max_dist = 50):
 			if centroid[0] == point[0] and centroid[1] == point[1]:
 				counter_2 += 1
 
-		if counter_1 > 0 and counter_2 > 0:
-			cost = -1000
-
+		if counter_1 > 0 or counter_2 > 0:
+			cost = -1e6
 		else:
-			vector_1 = centroid_1-centroid_2
-			vector_2 = centroid_2 + cell2['major_axis_length']*np.array([np.sin(cell2['orientation']),np.cos(cell2['orientation']),])
-
-			cosangle = np.dot(vector_1,vector_2)/(np.linalg.norm(vector_1)*np.linalg.norm(vector_2))
 
 			overlap = [point for point in internal_points_1 if point in internal_points_2]
 			num_overlap = len(overlap)
 
-			if num_overlap/area_1 > 0.1 or num_overlap/area_1 == 0.1:
-				cost = -100*num_overlap
+			frac_overlap = np.amin([num_overlap/area_1, num_overlap/area_2])
+			if frac_overlap > 0.1:
+				cost = -1e5*frac_overlap
 
-			else: 
+			if area_1 > 3* area_2 or area_2 > 3*area_1:
 				cost = 1e6
-
+			
+			else: 
+				cost = 1e4
 	else:
-		cost = 1e6 
+		cost = np.Inf
 
 	return cost
 
-def cost_function_overlap_daughter(cell1,cell2, max_dist = 20):
+def cost_function_overlap_daughter(cell1,cell2, max_dist = 25):
 	internal_points_1 = cell1['coords'].tolist()
 	internal_points_2 = cell2['coords'].tolist()
 
 	area_1 = cell1['area']
 	area_2 = cell2['area']
 
-	centroid_1 = np.asarray(cell1['centroid'])
-	centroid_2 = np.asarray(cell2['centroid'])
+	centroid_1 = np.floor(np.asarray(cell1['centroid']))
+	centroid_2 = np.floor(np.asarray(cell2['centroid']))
 
 	dist = np.sqrt(np.sum((centroid_1-centroid_2) ** 2))
 
@@ -2154,7 +2151,7 @@ def cost_function_overlap_daughter(cell1,cell2, max_dist = 20):
 				counter_1 += 1
 
 		if counter_1 > 0:
-			cost = -1000
+			cost = -10000
 
 		else:
 			vector_1 = centroid_1-centroid_2
@@ -2165,30 +2162,31 @@ def cost_function_overlap_daughter(cell1,cell2, max_dist = 20):
 			overlap = [point for point in internal_points_1 if point in internal_points_2]
 			num_overlap = len(overlap)
 
-			if num_overlap/area_1 > 0.1 or num_overlap/area_1 == 0.1:
-				cost = -100*num_overlap
+			frac_overlap = np.amin([num_overlap/area_1, num_overlap/area_2])
+			if frac_overlap > 0.1:
+				cost = -1000*frac_overlap
+
+			if area_1 > 5* area_2 or area_2 > 5* area_1:
+				cost = 1e6
 
 			else: 
 				cost = 1e6
 
 	else:
-		cost = 1e6
+		cost = np.Inf
 
 	return cost
 
 def run_LAP(cost_matrix, N_1, N_2):
 	from scipy.optimize import linear_sum_assignment as scipy_lap
-	# assignment = scipy_lap(cost_matrix)
-	# x = assignment[:, 0]
-	# y = assignment[:, 1]
+	assignment = scipy_lap(cost_matrix)
 
-	# x = assignment[0]
-	# y = assignment[1]
+	x = assignment[0]
+	y = assignment[1]
 
-	# binaryAssign = np.zeros(cost_matrix.shape, bool)
-	# binaryAssign[x, y] = True
+	binaryAssign = np.zeros(cost_matrix.shape, bool)
+	binaryAssign[x, y] = True
 
-	binaryAssign = munkres_lap(cost_matrix)
 	binaryAssign = binaryAssign[0:2*N_1, 0:N_2]
 
 	idx, idy = np.where(binaryAssign)
@@ -2241,7 +2239,6 @@ def cell_linker(region_1, region_2, tracks, frame_numbers, direc_save):
 
 	# Run LAP
 	assigned_1, assigned_2 = run_LAP(cost_matrix, N_1, N_2)
-
 
 	# Add assigned cells to tracks
 	for j in xrange(len(assigned_2)):
