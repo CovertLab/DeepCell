@@ -14,9 +14,10 @@ from keras.regularizers import l2
 from keras.optimizers import SGD, RMSprop
 from keras.utils import np_utils
 
-from cnn_functions import load_training_data, euclidean_distance, eucl_dist_output_shape, tensorprod_softmax, sparse_Convolution2D, sparse_MaxPooling2D, TensorProd2D, set_weights
+from cnn_functions import load_training_data, euclidean_distance, eucl_dist_output_shape, tensorprod_softmax, sparse_Convolution2D, sparse_MaxPooling2D, TensorProd2D, set_weights, residual_block
 from keras.models import Model
-from keras.layers import Input, Activation, merge, Dense, Flatten, Lambda
+from keras.layers import Input, Activation, merge, Dense, Flatten, Lambda, merge
+import cropping
 
 import os
 import datetime
@@ -1399,5 +1400,45 @@ def simple_siamese(reg = 0.001, drop = 0.5, init = 'he_normal'):
 
 	distance = Lambda(euclidean_distance, output_shape = eucl_dist_output_shape)([processed_1, processed_2])
 	model = Model(input = [input_1, input_2], output = distance)
+
+	return model
+
+''' Residual network block designs '''
+def residual_unit_1L(n_filters, kernel, init = 'he_normal', reg = 0.001):
+	def f(input):
+		norm1 = BatchNormalization(axis = 1, mode = 2)(input)
+		act1 = Activation('relu')(norm1)
+		conv1 = Convolution2D(n_filters, kernel, kernel, init=init, border_mode = 'valid', W_regularizer = l2(reg))(act1)
+
+		crop_size = (kernel - 1)/2
+		#short1 = Convolution2D(n_filters, 3, 3, init=init, border_mode = 'valid', W_regularizer = l2(reg))(input)
+		short1 = cropping.Cropping2D(cropping=((crop_size,crop_size),(crop_size,crop_size)) )(input)
+		return merge([short1, conv1], mode="sum")
+
+	return f
+
+'''Residual network architectures '''
+#residual_block is a helper function in cnn_function.py
+def resnet_61x61(n_channels, n_categories):
+	input = Input(shape=(n_channels,61,61))
+	#(1,61,61)
+	block1 = residual_block(residual_unit_1L, 64, 3, 1)(input)
+	#(64, 59, 59)
+	block2 = residual_block(residual_unit_1L, 64, 4, 1)(block1)
+	#(64, 56, 56)
+	pool1 = MaxPooling2D(pool_size=(2,2))(block2)
+	#(64, 28, 28)
+	block3 = residual_block(residual_unit_1L, 128, 3, 1)(pool1)
+	#(128, 26, 26)
+	pool2 = MaxPooling2D(pool_size = (2,2))(block3)
+	#(128, 13, 13)
+	block4 = residual_block(residual_unit_1L, 256, 4, 1)(pool2)
+	#(256, 10, 10)
+	pool3 = MaxPooling2D(pool_size = (2,2))(block4)
+	#(256, 5, 5)
+
+	flatten1 = Flatten()(pool3)
+	dense1 = Dense(output_dim=n_categories, init = init, activation = "softmax", W_regularizer = l2(reg))(flatten1)
+	model = Model(input = input, output = dense1)
 
 	return model

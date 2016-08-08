@@ -2491,3 +2491,12 @@ def plot_lineage_total(list_of_cells, tracks, image_size):
 		mask_array[frame_id-min_frame_number,coords_x,coords_y] = cell['trackId'] + 1
 
 	return mask_array, all_cell_mask
+
+''' For residual networks '''
+def residual_block(block_function, n_filters, kernel, reps):
+	def f(input):
+		for i in range(reps):
+			input = block_function(n_filters = n_filters, kernel=kernel)(input)
+		return input
+
+	return f
