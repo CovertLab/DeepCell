@@ -1,0 +1,172 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>FAQ</title>
+    
+    <meta name="author" content="">
+
+    <!-- Enable responsive viewport -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!-- Le styles -->
+    <link href="/assets/themes/twitter/bootstrap/css/bootstrap.2.2.2.min.css" rel="stylesheet">
+    <link href="/assets/themes/twitter/css/style.css?body=1" rel="stylesheet" type="text/css" media="all">
+
+    <!-- Le fav and touch icons -->
+  <!-- Update these with your own images
+    <link rel="shortcut icon" href="images/favicon.ico">
+    <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="images/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="images/apple-touch-icon-114x114.png">
+  -->
+
+    <!-- atom & rss feed -->
+    <link href="" type="application/atom+xml" rel="alternate" title="Sitewide ATOM Feed">
+    <link href="" type="application/rss+xml" rel="alternate" title="Sitewide RSS Feed">
+
+  </head>
+
+  <body>
+    <div class="navbar">
+      <div class="navbar-inner">
+        <div class="container-narrow">
+          <a class="brand" href="/">DeepCell</a>
+          <ul class="nav">
+            
+            
+            
+
+
+  
+    
+      
+      	
+      	<li><a href="/about/">About</a></li>
+      	
+      
+    
+  
+    
+      
+      	
+      	<li><a href="/download/">Download</a></li>
+      	
+      
+    
+  
+    
+      
+      	
+      	<li class="active"><a href="/faq/" class="active">FAQ</a></li>
+      	
+      
+    
+  
+    
+      
+      	
+      	<li><a href="/starting/">Getting Started</a></li>
+      	
+      
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+
+
+
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="container-narrow">
+
+      <div class="content">
+        
+
+<div class="page-header">
+  <h1>FAQ </h1>
+</div>
+
+<div class="row-fluid">
+  <div class="span12">
+    
+<ul>
+  <li>I’m having trouble with <strong>DeepCell</strong>. Can I get help.
+    <ul>
+      <li>Yes. If you think you have discovered a bug that needs to be fixed please file a report on the GitHub page.</li>
+    </ul>
+  </li>
+  <li>What kind of hardware do I need to run <strong>DeepCell</strong>?
+    <ul>
+      <li>You will need a CUDA/cuDNN capable Nvidia GPU. We have had good success with the Nvidia GTX 980, Titan X, and GTX 1080 graphics cards.</li>
+    </ul>
+  </li>
+  <li>Does <strong>DeepCell</strong> work with TensorFlow?
+    <ul>
+      <li>Unfortunately no. We have found that TensorFlow is unable to use numpy like indexing to address tensors. This makes it significantly harder to implement d-regularly pooling kernels - but we’re working on it.</li>
+    </ul>
+  </li>
+  <li>Does <strong>DeepCell</strong> track cells from frame to frame?
+    <ul>
+      <li>Unfortunately no. Right now, this software package focuses solely on the image segmentation problem for live-cell experiments. However, we are aware that cell tracking is an issue for a number of labs and we’re actively working on deep learning approaches to this problem.</li>
+    </ul>
+  </li>
+  <li>What cells can <strong>DeepCell</strong> segment?
+    <ul>
+      <li>So far we have trained convolutional neural networks to segment fluorescently labeled nuclei, as well as phase images of E. coli, MCF10A cells, NIH-3T3 cells, HeLa-S3 cells, RAW264.7 cells, and bone marrow derived macrophages.</li>
+    </ul>
+  </li>
+  <li>Do I need a nuclear label to segment the cytoplasm of mammalian cells?
+    <ul>
+      <li>For our approach, yes. The nuclear labels are necessary to refine the segmentation prediction.</li>
+    </ul>
+  </li>
+  <li>Should I train my own network?
+    <ul>
+      <li>We recommend it. There are laboratory-to-laboratory differences (lighting, microscope, camera, pixel size, etc.) that do matter.</li>
+    </ul>
+  </li>
+  <li>Where should I go if I want to learn more about deep learning?
+    <ul>
+      <li>Two great websites are <a href="http://www.deeplearning.net">deeplearning.net</a> and <a href="http://cs231n.stanford.edu/">Stanford’s cs231n course notes</a>.</li>
+    </ul>
+  </li>
+</ul>
+
+  </div>
+</div>
+
+
+      </div>
+      <hr>
+      <footer>
+        <p>&copy; 2016 
+          with help from <a href="http://jekyllbootstrap.com" target="_blank" title="The Definitive Jekyll Blogging Framework">Jekyll Bootstrap</a>
+          and <a href="http://twitter.github.com/bootstrap/" target="_blank">Twitter Bootstrap</a>
+        </p>
+      </footer>
+
+    </div>
+
+    
+
+
+  </body>
+</html>
+

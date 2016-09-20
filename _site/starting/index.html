@@ -1,0 +1,202 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Getting Started</title>
+    
+    <meta name="author" content="">
+
+    <!-- Enable responsive viewport -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!-- Le styles -->
+    <link href="/assets/themes/twitter/bootstrap/css/bootstrap.2.2.2.min.css" rel="stylesheet">
+    <link href="/assets/themes/twitter/css/style.css?body=1" rel="stylesheet" type="text/css" media="all">
+
+    <!-- Le fav and touch icons -->
+  <!-- Update these with your own images
+    <link rel="shortcut icon" href="images/favicon.ico">
+    <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="images/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="images/apple-touch-icon-114x114.png">
+  -->
+
+    <!-- atom & rss feed -->
+    <link href="" type="application/atom+xml" rel="alternate" title="Sitewide ATOM Feed">
+    <link href="" type="application/rss+xml" rel="alternate" title="Sitewide RSS Feed">
+
+  </head>
+
+  <body>
+    <div class="navbar">
+      <div class="navbar-inner">
+        <div class="container-narrow">
+          <a class="brand" href="/">DeepCell</a>
+          <ul class="nav">
+            
+            
+            
+
+
+  
+    
+      
+      	
+      	<li><a href="/about/">About</a></li>
+      	
+      
+    
+  
+    
+      
+      	
+      	<li><a href="/download/">Download</a></li>
+      	
+      
+    
+  
+    
+      
+      	
+      	<li><a href="/faq/">FAQ</a></li>
+      	
+      
+    
+  
+    
+      
+      	
+      	<li class="active"><a href="/starting/" class="active">Getting Started</a></li>
+      	
+      
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+
+
+
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="container-narrow">
+
+      <div class="content">
+        
+
+<div class="page-header">
+  <h1>Getting Started </h1>
+</div>
+
+<div class="row-fluid">
+  <div class="span12">
+    <h2 id="hardware">Hardware</h2>
+<p>We have been running DeepCell on a Puget systems workstation that has a 6 core Intel Xeon processor and 2 Nvidia GTX980 graphics cards. We have also run DeepCell on Stanford’s Sherlock cluster that uses Nvidia GTX Titan Black graphics cards. We have not tested our code on other setups, but any computer that has a CUDA and cuDNN compatible video card should be fine.</p>
+
+<h2 id="installation">Installation</h2>
+<p>Run the following commands to install the required dependencies</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>pip install numpy
+pip install scipy
+pip install scikit-learn scikit-image matplotlib palettable scipy libtiff
+pip install --upgrade --no-deps git+git://github.com/Theano/Theano.git
+pip install keras
+</code></pre>
+</div>
+<p>Further details about installing theano can be found at http://deeplearning.net/software/theano/install.html. We use the bleeding edge installation of Theano, as it contains a pooling function with variable strides which is necessary. All of the dependencies for running theano on a GPU (CUDA and cuDNN) should also be installed.</p>
+
+<h2 id="brief-workflow-overview">Brief workflow overview</h2>
+<p>DeepCell was developed to segment three different types of images
+* Phase microscopy images of E. coli. 
+* Fluorescent images of mammalian cell nuclei
+* Phase images (in combination with a fluorescent nuclear marker) of mammalian cell cytoplasms</p>
+
+<p>The workflow for creating a new convolutional neural network (conv-net) to segment a microscope image is straight forward. First, an example image is turned into a training dataset. Second, a neural network model is chosen and trained to perform the segmentation. Once the training is complete, any new image can be processed with the trained conv-net to produce a segmentation prediction. These predictions are then subjected to a final refinement step to produce a segmentation mask (a binary image where 0 denotes the background and 1 denotes the object of choice)</p>
+
+<h2 id="making-training-data-sets">Making training data sets</h2>
+<p>We’ve annotated several training datasets that are available in the training_data folder. Because there are differences in image acquisition between laboratories (different cameras, different magnifications, etc), we recommend creating your own training dataset for cells you want to segment. To create a new training dataset, we use ImageJ and the ROI manager. One tool we found to be very useful was a Wacom Intuos Draw graphics tablet (Model # CTL490DW ~$100). We use the free hand selection tool to trace the border of each cell, adding it to the ROI manager’s list of objects. When all the cells are segmented, we then created a new image (identical in size to the original) and used the draw command to create a mask of the edges. This image is then saved as a png file. The flood fill tool is then used to fill in each cell to create a mask of the cellular interior. The edge mask is subtracted from this image (using the image calculator) and the output is also saved as a png file. The convention we have been using is to name the edge mask as ‘feature_0.png’ and the interior mask as ‘feature_1.png’</p>
+
+<p>The following static <a href="/making_training_data.html">ipython notebook</a> details how to convert the training images and their annotation into a training data set that can be used to train a conv-net. An interactive version is also available in the keras_version folder.</p>
+
+<h2 id="training-conv-nets">Training conv-nets</h2>
+<p>The following static <a href="/training_convnets.html">ipython notebook</a> walks you through the script that loads training data and trains a conv-net to perform image segmentation.</p>
+
+<h2 id="executing-conv-nets">Executing conv-nets</h2>
+<p>The following static <a href="/running_convnets.html">ipython notebook</a> walks you through the script that runs a trained conv-net on a new image. It also walks you through the downstream refinement process.</p>
+
+<h2 id="running-on-sherlock">Running on Sherlock</h2>
+<p>These instructions apply to members of the Stanford community with access to Sherlock. Make sure you have access to sherlock and have followed the instructions at the <a href="http://sherlock.stanford.edu">Sherlock homepage</a> to get started. In your home directory run ‘nano .theanorc’ and paste the following into the file:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="o">[</span>global]
+device <span class="o">=</span> gpu
+floatX <span class="o">=</span> float32
+<span class="o">[</span>blas]
+ldflags <span class="o">=</span> -lopenblas
+</code></pre>
+</div>
+
+<p>Save the file - this step only needs to be done once. If you have been added to the Covert lab group, In the deep cell folder, run ‘pyenv local DeepCell’ to assign that folder the deep cell local python environment. Otherwise, you will need to make sure all of the dependencies are installed as above. To request a GPU node on sherlock, run the command</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>srun -p owners --gres<span class="o">=</span>gpu:gtx:1 --time<span class="o">=</span>12:00:00 --pty bash -l 
+</code></pre>
+</div>
+
+<p>if you have access to owners, or run</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>srun -p gpu --gres<span class="o">=</span>gpu:gtx:1 --time<span class="o">=</span>12:00:00 --pty bash -l
+</code></pre>
+</div>
+
+<p>to get into the general gpu queue.</p>
+
+<p>To utilize the GPU, run the commands</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>module load cuda/7.5
+module load cuDNN/v4
+</code></pre>
+</div>
+
+<p>You should now be configured to use the GPUs on sherlock. If you have requested more than 1 GPU for your session use the command</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>nvidia-smi -L
+</code></pre>
+</div>
+
+<p>to determine the gpu name so you can pass it to theano flags (if you need to).</p>
+
+  </div>
+</div>
+
+
+      </div>
+      <hr>
+      <footer>
+        <p>&copy; 2016 
+          with help from <a href="http://jekyllbootstrap.com" target="_blank" title="The Definitive Jekyll Blogging Framework">Jekyll Bootstrap</a>
+          and <a href="http://twitter.github.com/bootstrap/" target="_blank">Twitter Bootstrap</a>
+        </p>
+      </footer>
+
+    </div>
+
+    
+
+
+  </body>
+</html>
+
