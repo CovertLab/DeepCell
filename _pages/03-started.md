@@ -32,13 +32,13 @@ The workflow for creating a new convolutional neural network (conv-net) to segme
 ## Making training data sets
 We've annotated several training datasets that are available in the training_data folder. Because there are differences in image acquisition between laboratories (different cameras, different magnifications, etc), we recommend creating your own training dataset for cells you want to segment. To create a new training dataset, we use ImageJ and the ROI manager. One tool we found to be very useful was a Wacom Intuos Draw graphics tablet (Model # CTL490DW ~$100). We use the free hand selection tool to trace the border of each cell, adding it to the ROI manager's list of objects. When all the cells are segmented, we then created a new image (identical in size to the original) and used the draw command to create a mask of the edges. This image is then saved as a png file. The flood fill tool is then used to fill in each cell to create a mask of the cellular interior. The edge mask is subtracted from this image (using the image calculator) and the output is also saved as a png file. The convention we have been using is to name the edge mask as 'feature_0.png' and the interior mask as 'feature_1.png'
 
-The following static [ipython notebook](/making_training_data.html) details how to convert the training images and their annotation into a training data set that can be used to train a conv-net. An interactive version is also available in the keras_version folder.
+The following static [ipython notebook](/DeepCell/making_training_data.html) details how to convert the training images and their annotation into a training data set that can be used to train a conv-net. An interactive version is also available in the keras_version folder.
 
 ## Training conv-nets
-The following static [ipython notebook](/training_convnets.html) walks you through the script that loads training data and trains a conv-net to perform image segmentation.
+The following static [ipython notebook](/DeepCell/training_convnets.html) walks you through the script that loads training data and trains a conv-net to perform image segmentation.
 
 ## Executing conv-nets
-The following static [ipython notebook](/running_convnets.html) walks you through the script that runs a trained conv-net on a new image. It also walks you through the downstream refinement process.
+The following static [ipython notebook](/DeepCell/running_convnets.html) walks you through the script that runs a trained conv-net on a new image. It also walks you through the downstream refinement process.
 
 ## Running on Sherlock
 These instructions apply to members of the Stanford community with access to Sherlock. Make sure you have access to sherlock and have followed the instructions at the [Sherlock homepage](http://sherlock.stanford.edu) to get started. In your home directory run 'nano .theanorc' and paste the following into the file:

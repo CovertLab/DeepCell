@@ -5,5 +5,5 @@ layout: page
 
 <!-- Read [Jekyll Quick Start](http://jekyllbootstrap.com/usage/jekyll-quick-start.html) //-->
 
-[<img src = "deepcell.jpg">](/about/)
+[<img src = "deepcell.jpg">]({{site.baseurl}}/about/)
 
