@@ -4,10 +4,10 @@
     <title>DeepCell</title>
     <description>Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description.
 </description>
-    <link>http://yourdomain.com/</link>
-    <atom:link href="http://yourdomain.com/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Fri, 15 Jul 2016 19:00:42 -0700</pubDate>
-    <lastBuildDate>Fri, 15 Jul 2016 19:00:42 -0700</lastBuildDate>
+    <link>http://covertlab.github.io/DeepCell/</link>
+    <atom:link href="http://covertlab.github.io/DeepCell/feed.xml" rel="self" type="application/rss+xml"/>
+    <pubDate>Tue, 20 Sep 2016 15:48:49 -0700</pubDate>
+    <lastBuildDate>Tue, 20 Sep 2016 15:48:49 -0700</lastBuildDate>
     <generator>Jekyll v3.1.6</generator>
     
       <item>
@@ -28,8 +28,8 @@
 
 </description>
         <pubDate>Thu, 14 Jul 2016 13:02:24 -0700</pubDate>
-        <link>http://yourdomain.com/jekyll/update/2016/07/14/welcome-to-jekyll.html</link>
-        <guid isPermaLink="true">http://yourdomain.com/jekyll/update/2016/07/14/welcome-to-jekyll.html</guid>
+        <link>http://covertlab.github.io/DeepCell/jekyll/update/2016/07/14/welcome-to-jekyll.html</link>
+        <guid isPermaLink="true">http://covertlab.github.io/DeepCell/jekyll/update/2016/07/14/welcome-to-jekyll.html</guid>
         
         
         <category>jekyll</category>
@@ -43,8 +43,8 @@
         <description>
 </description>
         <pubDate>Thu, 14 Jul 2016 00:00:00 -0700</pubDate>
-        <link>http://yourdomain.com/2016/07/14/hello-world.html</link>
-        <guid isPermaLink="true">http://yourdomain.com/2016/07/14/hello-world.html</guid>
+        <link>http://covertlab.github.io/DeepCell/2016/07/14/hello-world.html</link>
+        <guid isPermaLink="true">http://covertlab.github.io/DeepCell/2016/07/14/hello-world.html</guid>
         
         
       </item>
