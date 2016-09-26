@@ -9,17 +9,59 @@ order: 4
 ## Hardware
 We have been running DeepCell on a Puget systems workstation that has a 6 core Intel Xeon processor and 2 Nvidia GTX980 graphics cards. We have also run DeepCell on Stanford's Sherlock cluster that uses Nvidia GTX Titan Black graphics cards. We have not tested our code on other setups, but any computer that has a CUDA and cuDNN compatible video card should be fine.
 
+## Docker image
+A docker image is available at https://hub.docker.com/r/vanvalen/deepcell/. It's use requires that you have docker and nvidia-docker already installed. The docker image can be installed with the command
+```bash
+docker pull vanvalen/deepcell
+```
+
+The ipython notebooks can then be accessed by running the command
+```bash
+sudo nvidia-docker run -it -p 9999:9999 vanvalen/deepcell
+```
+and directing your web browser to http://localhost:9999/
+
 ## Installation
-Run the following commands to install the required dependencies
+While the docker container will let you get started quickly, frequent users will find it more convenient to install the software outside of a Docker container. The following installation commands assume you are working on an Ubuntu workstation (version 14.04) with CUDA 8 and cuDNN 5 (and all their dependencies) already installed. Further details about installing theano can be found at http://deeplearning.net/software/theano/install.html. We use the bleeding edge installation of Theano, as it contains a pooling function with variable strides which is necessary. Begin by running the following commands to install git and the necessary compilers.
 
 ```bash
+apt-get -y update 
+apt-get install -y git curl g++ make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev
+```
+
+Next, run the following commands to instal pyenv, a package for managing Python virtual environments.
+
+```bash
+curl -L https://raw.githubusercontent.com/yyuu/pyenv-installer/master/bin/pyenv-installer | bash
+CONFIGURE_OPTS=--enable-shared pyenv install 2.7.4
+```
+
+Next, clone the DeepCell Github repository by running the command
+
+```bash
+git clone https://github.com/CovertLab/DeepCell.git
+```
+
+Move to the DeepCell folder and run the following to set up the Python virtual environment
+
+```bash
+pyenv local 2.7.4
+pyenv virtualenv DeepCell
+pyenv local DeepCell
 pip install numpy
 pip install scipy
-pip install scikit-learn scikit-image matplotlib palettable scipy libtiff
+pip install scikit-learn scikit-image matplotlib palettable libtiff tifffile h5py ipython[all]
 pip install --upgrade --no-deps git+git://github.com/Theano/Theano.git
-pip install keras
+pip install keras pywavelets mahotas
 ```
-Further details about installing theano can be found at http://deeplearning.net/software/theano/install.html. We use the bleeding edge installation of Theano, as it contains a pooling function with variable strides which is necessary. All of the dependencies for running theano on a GPU (CUDA and cuDNN) should also be installed.
+
+Finally, we must configure keras to use the Theano backend, and instruct Theano to use the GPU by default.
+
+```bash
+mkdir ~/.keras
+echo '{"image_dim_ordering": "th", "epsilon": 1e-07, "floatx": "float32", "backend": "theano"}' >> ~/.keras/keras.json
+echo '[global]\ndevice = gpu\nfloatX = float32' > ~/.theanorc
+```
 
 ## Brief workflow overview
 DeepCell was developed to segment three different types of images
