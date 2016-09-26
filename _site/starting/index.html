@@ -109,19 +109,21 @@
 <p>We have been running DeepCell on a Puget systems workstation that has a 6 core Intel Xeon processor and 2 Nvidia GTX980 graphics cards. We have also run DeepCell on Stanford’s Sherlock cluster that uses Nvidia GTX Titan Black graphics cards. We have not tested our code on other setups, but any computer that has a CUDA and cuDNN compatible video card should be fine.</p>
 
 <h2 id="docker-image">Docker image</h2>
-<p>A docker image is available at https://hub.docker.com/r/vanvalen/deepcell/. It’s use requires that you have docker and nvidia-docker already installed. The docker image can be installed with the command
-<code class="highlighter-rouge">bash
-docker pull vanvalen/deepcell
-</code></p>
+<p>A docker image is available at <a href="https://hub.docker.com/r/vanvalen/deepcell/">https://hub.docker.com/r/vanvalen/deepcell/</a>. Its use requires that you have <a href="docker">https://docs.docker.com/engine/installation/linux/ubuntulinux/</a> and <a href="nvidia-docker">https://github.com/NVIDIA/nvidia-docker</a> already installed. The docker image can be installed with the command</p>
 
-<p>The ipython notebooks can then be accessed by running the command
-<code class="highlighter-rouge">bash
-sudo nvidia-docker run -it -p 9999:9999 vanvalen/deepcell
-</code>
-and directing your web browser to http://localhost:9999/</p>
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>docker pull vanvalen/deepcell
+</code></pre>
+</div>
+
+<p>The ipython notebooks can then be accessed by running the command</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>sudo nvidia-docker run -it -p 9999:9999 vanvalen/deepcell
+</code></pre>
+</div>
+<p>and directing your web browser to <a href="http://localhost:9999/">http://localhost:9999/</a></p>
 
 <h2 id="installation">Installation</h2>
-<p>While the docker container will let you get started quickly, frequent users will find it more convenient to install the software outside of a Docker container. The following installation commands assume you are working on an Ubuntu workstation (version 14.04) with CUDA 8 and cuDNN 5 (and all their dependencies) already installed. Further details about installing theano can be found at http://deeplearning.net/software/theano/install.html. We use the bleeding edge installation of Theano, as it contains a pooling function with variable strides which is necessary. Begin by running the following commands to install git and the necessary compilers.</p>
+<p>While the docker container will let you get started quickly, frequent users will find it more convenient to install the software outside of a Docker container. The following installation commands assume you are working on an Ubuntu workstation (version 14.04) with CUDA 8 and cuDNN 5 (and all their dependencies) already installed. Further details about installing theano can be found at <a href="the Theano home page">http://deeplearning.net/software/theano/install.html</a>. We use the bleeding edge installation of Theano, as it contains a pooling function with variable strides which is necessary. Begin by running the following commands to install git and the necessary compilers.</p>
 
 <div class="language-bash highlighter-rouge"><pre class="highlight"><code>apt-get -y update 
 apt-get install -y git curl g++ make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev
@@ -208,8 +210,8 @@ ldflags <span class="o">=</span> -lopenblas
 
 <p>To utilize the GPU, run the commands</p>
 
-<div class="language-bash highlighter-rouge"><pre class="highlight"><code>module load cuda/7.5
-module load cuDNN/v4
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>module load cuda/8
+module load cuDNN/v5
 </code></pre>
 </div>
 
