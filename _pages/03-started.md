@@ -10,7 +10,7 @@ order: 4
 We have been running DeepCell on a Puget systems workstation that has a 6 core Intel Xeon processor and 2 Nvidia GTX980 graphics cards. We have also run DeepCell on Stanford's Sherlock cluster that uses Nvidia GTX Titan Black graphics cards. We have not tested our code on other setups, but any computer that has a CUDA and cuDNN compatible video card should be fine.
 
 ## Docker image
-A docker image is available at [https://hub.docker.com/r/vanvalen/deepcell/](https://hub.docker.com/r/vanvalen/deepcell/). Its use requires that you have [https://docs.docker.com/engine/installation/linux/ubuntulinux/](docker) and [https://github.com/NVIDIA/nvidia-docker](nvidia-docker) already installed. The docker image can be installed with the command
+A docker image is available [here](https://hub.docker.com/r/vanvalen/deepcell/). Its use requires that you have [docker](https://docs.docker.com/engine/installation/linux/ubuntulinux/) and [nvidia-docker](https://github.com/NVIDIA/nvidia-docker) already installed. The docker image can be installed with the command
 
 ```bash
 docker pull vanvalen/deepcell
@@ -24,7 +24,7 @@ sudo nvidia-docker run -it -p 9999:9999 vanvalen/deepcell
 and directing your web browser to [http://localhost:9999/](http://localhost:9999/)
 
 ## Installation
-While the docker container will let you get started quickly, frequent users will find it more convenient to install the software outside of a Docker container. The following installation commands assume you are working on an Ubuntu workstation (version 14.04) with CUDA 8 and cuDNN 5 (and all their dependencies) already installed. Further details about installing theano can be found at [http://deeplearning.net/software/theano/install.html](the Theano home page). We use the bleeding edge installation of Theano, as it contains a pooling function with variable strides which is necessary. Begin by running the following commands to install git and the necessary compilers.
+While the docker container will let you get started quickly, frequent users will find it more convenient to install the software outside of a Docker container. The following installation commands assume you are working on an Ubuntu workstation (version 14.04) with CUDA 8 and cuDNN 5 (and all their dependencies) already installed. Further details about installing theano can be found at [the Theano home page](http://deeplearning.net/software/theano/install.html). We use the bleeding edge installation of Theano, as it contains a pooling function with variable strides which is necessary. Begin by running the following commands to install git and the necessary compilers.
 
 ```bash
 apt-get -y update 
