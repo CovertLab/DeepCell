@@ -67,6 +67,7 @@ echo '[global]\ndevice = gpu\nfloatX = float32' > ~/.theanorc
 
 ## Brief workflow overview
 DeepCell was developed to segment three different types of images
+
 * Phase microscopy images of E. coli. 
 * Fluorescent images of mammalian cell nuclei
 * Phase images (in combination with a fluorescent nuclear marker) of mammalian cell cytoplasms
