@@ -9,7 +9,7 @@ import tifffile as tiff
 from keras.backend.common import _UID_PREFIXES
 
 from cnn_functions import nikon_getfiles, get_image, run_models_on_directory, get_image_sizes, segment_nuclei, segment_cytoplasm, dice_jaccard_indices
-from model_zoo import sparse_bn_feature_net_31x31 as cyto_fn
+# from model_zoo import sparse_bn_feature_net_31x31 as cyto_fn
 from model_zoo import sparse_bn_feature_net_61x61 as nuclear_fn
 
 
@@ -20,51 +20,53 @@ import numpy as np
 """
 Load data
 """
-direc_name = '/home/vanvalen/Data/ecoli'
-data_location = os.path.join(direc_name, 'Align')
-cyto_location = os.path.join(direc_name, 'Cytoplasm')
+direc_name = '/home/vanvalen/DeepCell/testing_data/theriot'
+data_location = os.path.join(direc_name, 'RawImages')
+# cyto_location = os.path.join(direc_name, 'Cytoplasm')
 nuclear_location = os.path.join(direc_name, 'Nuclear')
 mask_location = os.path.join(direc_name, 'Masks')
 
-cyto_channel_names = ['Pos3']
-nuclear_channel_names = ['DAPI']
+# cyto_channel_names = ['Pos3']
+nuclear_channel_names = ['nucleus']
 
-trained_network_cyto_directory = "/home/vanvalen/DeepCell2/trained_networks/"
-trained_network_nuclear_directory = "/home/vanvalen/DeepCell2/trained_networks/Nuclear"
+# trained_network_cyto_directory = "/home/vanvalen/DeepCell/trained_networks/"
+trained_network_nuclear_directory = "/home/vanvalen/DeepCell/trained_networks/theriot/"
 
-cyto_prefix = "2016-08-02_ecoli_all_31x31_bn_feature_net_31x31_"
-nuclear_prefix = "2016-07-12_nuclei_all_61x61_bn_feature_net_61x61_"
+# cyto_prefix = "2016-08-02_ecoli_all_31x31_bn_feature_net_31x31_"
+nuclear_prefix = "2017-04-13_theriot_61x61_bn_feature_net_61x61_"
 
-win_cyto = 15
+# win_cyto = 15
 win_nuclear = 30
 
-image_size_x, image_size_y = get_image_sizes(data_location, cyto_channel_names)
+image_size_x, image_size_y = get_image_sizes(data_location, nuclear_channel_names)
 
 """
 Define model
 """
 
-list_of_cyto_weights = []
-for j in xrange(5):
-	cyto_weights = os.path.join(trained_network_cyto_directory,  cyto_prefix + str(j) + ".h5")
-	list_of_cyto_weights += [cyto_weights]
+# list_of_cyto_weights = []
+# for j in xrange(5):
+# 	cyto_weights = os.path.join(trained_network_cyto_directory,  cyto_prefix + str(j) + ".h5")
+# 	list_of_cyto_weights += [cyto_weights]
 
 list_of_nuclear_weights = []
-for j in xrange(5):
+for j in xrange(1):
 	nuclear_weights = os.path.join(trained_network_nuclear_directory,  nuclear_prefix + str(j) + ".h5")
 	list_of_nuclear_weights += [nuclear_weights]
+
+print list_of_nuclear_weights
 
 """
 Run model on directory
 """
 
-cytoplasm_predictions = run_models_on_directory(data_location, cyto_channel_names, cyto_location, n_features = 3, model_fn = cyto_fn, 
-	list_of_weights = list_of_cyto_weights, image_size_x = image_size_x, image_size_y = image_size_y, 
-	win_x = win_cyto, win_y = win_cyto, std = False, split = False)
+# cytoplasm_predictions = run_models_on_directory(data_location, cyto_channel_names, cyto_location, n_features = 3, model_fn = cyto_fn, 
+# 	list_of_weights = list_of_cyto_weights, image_size_x = image_size_x, image_size_y = image_size_y, 
+# 	win_x = win_cyto, win_y = win_cyto, std = False, split = False)
 
-# nuclear_predictions = run_models_on_directory(data_location, nuclear_channel_names, nuclear_location, model_fn = nuclear_fn, 
-# 	list_of_weights = list_of_nuclear_weights, image_size_x = image_size_x, image_size_y = image_size_y, 
-# 	win_x = win_nuclear, win_y = win_nuclear, std = False, split = False)
+nuclear_predictions = run_models_on_directory(data_location, nuclear_channel_names, nuclear_location, model_fn = nuclear_fn, 
+	list_of_weights = list_of_nuclear_weights, image_size_x = image_size_x, image_size_y = image_size_y, 
+	win_x = win_nuclear, win_y = win_nuclear, std = False, split = False)
 
 """
 Refine segmentation with active contours

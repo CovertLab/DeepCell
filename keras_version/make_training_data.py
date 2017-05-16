@@ -39,13 +39,13 @@ window_size_x = 30
 window_size_y = 30
 
 # Load data
-direc_name = '/home/vanvalen/DeepCell2/training_data/MCF10A_3T3_semantic/'
-file_name_save = os.path.join('/home/vanvalen/DeepCell2/training_data_npz/', 'MCF10A_3T3_all_semantic_61x61.npz')
-training_direcs = ["MCF10A", "MCF10A", "MCF10A", "3T3/set1", "3T3/set2", "3T3/set3"]
-channel_names = ["phase", "nuclear"]
+direc_name = '/home/vanvalen/DeepCell/training_data/'
+file_name_save = os.path.join('/home/vanvalen/DeepCell/training_data_npz/', 'theriot_61x61.npz')
+training_direcs = ["theriot_nuclear/set1"]
+channel_names = ["nucleus"]
 
 # Specify the number of feature masks that are present
-num_of_features = 3
+num_of_features = 2
 
 # Some of the features that are edges we would like to do morphological
 # dilation (disk of radius dil_radius) for data augmentation. This vector identifies 

@@ -75,7 +75,8 @@ def set_weights(model, weights_path):
 	# for key in f.keys():
 	# 	g = f[key]
 	# 	weights = [g[k] for k in g.keys()]
-	# 	print weights
+	
+	# print f['model_weights'].keys()	
 
 	for layer in model.layers:
 		if 'tensorprod2d' in layer.name:
@@ -86,8 +87,26 @@ def set_weights(model, weights_path):
 			idsplit = layer.name.split('_')[-1]
 			layer.name = 'convolution2d_' + idsplit
 
-
 	for layer in model.layers:
+		if layer.name in f['model_weights'].keys():
+			if 'bn' in layer.name:
+				g = f['model_weights'][layer.name]
+				keys = ['{}_gamma'.format(layer.name), '{}_beta'.format(layer.name), '{}_running_mean'.format(layer.name), '{}_running_std'.format(layer.name)]
+				weights = [g[key] for key in keys]
+				layer.set_weights(weights)
+
+			if 'batch' in layer.name:
+				g = f['model_weights'][layer.name]
+				keys = ['{}_gamma'.format(layer.name), '{}_beta'.format(layer.name), '{}_running_mean'.format(layer.name), '{}_running_std'.format(layer.name)]
+				weights = [g[key] for key in keys]
+				layer.set_weights(weights)
+
+			else:
+				g = f['model_weights'][layer.name]
+				weights = [g[key] for key in g.keys()]
+				layer.set_weights(weights)
+
+		# In case old keras saving convention is used
 		if layer.name in f.keys():
 			if 'bn' in layer.name:
 				g = f[layer.name]
@@ -104,7 +123,8 @@ def set_weights(model, weights_path):
 			else:
 				g = f[layer.name]
 				weights = [g[key] for key in g.keys()]
-				layer.set_weights(weights)
+
+layer.set_weights(weights)
 
 	return model
 
@@ -206,6 +226,7 @@ def combinations(array):
 	return comb, np.array(list(y))
 
 def process_image(channel_img, win_x, win_y, std = False):
+
 	if std:
 		avg_kernel = np.ones((2*win_x + 1, 2*win_y + 1))
 		channel_img -= ndimage.convolve(channel_img, avg_kernel)/avg_kernel.size
