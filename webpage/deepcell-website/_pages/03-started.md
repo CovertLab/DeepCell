@@ -23,6 +23,7 @@ Further details about installing theano can be found at http://deeplearning.net/
 
 ## Brief workflow overview
 DeepCell was developed to segment three different types of images
+
 * Phase microscopy images of E. coli. 
 * Fluorescent images of mammalian cell nuclei
 * Phase images (in combination with a fluorescent nuclear marker) of mammalian cell cytoplasms
