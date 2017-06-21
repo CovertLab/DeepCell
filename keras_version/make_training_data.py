@@ -1,5 +1,3 @@
-
-
 """
 Created on 06/23/2016
 
@@ -35,14 +33,14 @@ from skimage.transform import resize
 
 # Define maximum number of training examples
 max_training_examples = 10000000
-window_size_x = 30
-window_size_y = 30
+window_size_x = 15
+window_size_y = 15
 
 # Load data
-direc_name = '/home/vanvalen/DeepCell/training_data/'
-file_name_save = os.path.join('/home/vanvalen/DeepCell/training_data_npz/', 'theriot_61x61.npz')
-training_direcs = ["theriot_nuclear/set1"]
-channel_names = ["nucleus"]
+direc_name = '/home/vanvalen/Data/slip/'
+file_name_save = os.path.join('/home/vanvalen/DeepCell/training_data_npz/', 'slip_31x31.npz')
+training_direcs = ["FOV1/", "FOV2/", "FOV3/", "FOV4/", "FOV5/"]
+channel_names = ["phase"]
 
 # Specify the number of feature masks that are present
 num_of_features = 2

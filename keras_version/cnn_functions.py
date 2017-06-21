@@ -124,7 +124,7 @@ def set_weights(model, weights_path):
 				g = f[layer.name]
 				weights = [g[key] for key in g.keys()]
 
-layer.set_weights(weights)
+	layer.set_weights(weights)
 
 	return model
 
