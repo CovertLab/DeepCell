@@ -27,20 +27,19 @@ from cnn_functions import get_image
 from cnn_functions import format_coord as cf
 from skimage import morphology as morph
 import matplotlib.pyplot as plt
-from pywt import WaveletPacket2D
 from skimage.transform import resize
 
 
 # Define maximum number of training examples
 max_training_examples = 10000000
-window_size_x = 15
-window_size_y = 15
+window_size_x = 30
+window_size_y = 30
 
 # Load data
-direc_name = '/home/vanvalen/Data/slip/'
-file_name_save = os.path.join('/home/vanvalen/DeepCell/training_data_npz/', 'slip_31x31.npz')
-training_direcs = ["FOV1/", "FOV2/", "FOV3/", "FOV4/", "FOV5/"]
-channel_names = ["phase"]
+direc_name = '/home/vanvalen/DeepCell/training_data/HeLa_joint/'
+file_name_save = os.path.join('/home/vanvalen/DeepCell/training_data_npz/HeLa/', 'HeLa_all_61x61.npz')
+training_direcs = ["set1/", "set2/", "set3/", "set4/", "set5/"]
+channel_names = ["phase", "nuclear"]
 
 # Specify the number of feature masks that are present
 num_of_features = 2

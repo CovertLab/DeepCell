@@ -60,7 +60,10 @@ from keras.callbacks import ModelCheckpoint, LearningRateScheduler
 from keras.engine import Layer, InputSpec
 from keras.utils import np_utils
 from keras import activations as activations
-from keras import initializations as initializations
+try:
+	from keras import initializations as initializations
+except ImportError:
+	from keras import initializers as initializations
 from keras import regularizers as regularizers
 from keras import constraints as constraints
 
@@ -88,43 +91,43 @@ def set_weights(model, weights_path):
 			layer.name = 'convolution2d_' + idsplit
 
 	for layer in model.layers:
-		if layer.name in f['model_weights'].keys():
-			if 'bn' in layer.name:
-				g = f['model_weights'][layer.name]
-				keys = ['{}_gamma'.format(layer.name), '{}_beta'.format(layer.name), '{}_running_mean'.format(layer.name), '{}_running_std'.format(layer.name)]
-				weights = [g[key] for key in keys]
-				layer.set_weights(weights)
+		if 'model_weights' in f.keys():
+			if layer.name in f['model_weights'].keys():
+				if 'bn' in layer.name:
+					g = f['model_weights'][layer.name]
+					keys = ['{}_gamma'.format(layer.name), '{}_beta'.format(layer.name), '{}_running_mean'.format(layer.name), '{}_running_std'.format(layer.name)]
+					weights = [g[key] for key in keys]
+					layer.set_weights(weights)
 
-			if 'batch' in layer.name:
-				g = f['model_weights'][layer.name]
-				keys = ['{}_gamma'.format(layer.name), '{}_beta'.format(layer.name), '{}_running_mean'.format(layer.name), '{}_running_std'.format(layer.name)]
-				weights = [g[key] for key in keys]
-				layer.set_weights(weights)
+				if 'batch' in layer.name:
+					g = f['model_weights'][layer.name]
+					keys = ['{}_gamma'.format(layer.name), '{}_beta'.format(layer.name), '{}_running_mean'.format(layer.name), '{}_running_std'.format(layer.name)]
+					weights = [g[key] for key in keys]
+					layer.set_weights(weights)
 
-			else:
-				g = f['model_weights'][layer.name]
-				weights = [g[key] for key in g.keys()]
-				layer.set_weights(weights)
+				else:
+					g = f['model_weights'][layer.name]
+					weights = [g[key] for key in g.keys()]
+					layer.set_weights(weights)
+		else:
+			# In case old keras saving convention is used
+			if layer.name in f.keys():
+				if 'bn' in layer.name:
+					g = f[layer.name]
+					keys = ['{}_gamma'.format(layer.name), '{}_beta'.format(layer.name), '{}_running_mean'.format(layer.name), '{}_running_std'.format(layer.name)]
+					weights = [g[key] for key in keys]
+					layer.set_weights(weights)
 
-		# In case old keras saving convention is used
-		if layer.name in f.keys():
-			if 'bn' in layer.name:
-				g = f[layer.name]
-				keys = ['{}_gamma'.format(layer.name), '{}_beta'.format(layer.name), '{}_running_mean'.format(layer.name), '{}_running_std'.format(layer.name)]
-				weights = [g[key] for key in keys]
-				layer.set_weights(weights)
+				if 'batch' in layer.name:
+					g = f[layer.name]
+					keys = ['{}_gamma'.format(layer.name), '{}_beta'.format(layer.name), '{}_running_mean'.format(layer.name), '{}_running_std'.format(layer.name)]
+					weights = [g[key] for key in keys]
+					layer.set_weights(weights)
 
-			if 'batch' in layer.name:
-				g = f[layer.name]
-				keys = ['{}_gamma'.format(layer.name), '{}_beta'.format(layer.name), '{}_running_mean'.format(layer.name), '{}_running_std'.format(layer.name)]
-				weights = [g[key] for key in keys]
-				layer.set_weights(weights)
-
-			else:
-				g = f[layer.name]
-				weights = [g[key] for key in g.keys()]
-
-	layer.set_weights(weights)
+				else:
+					g = f[layer.name]
+					weights = [g[key] for key in g.keys()]
+					layer.set_weights(weights)
 
 	return model
 
@@ -971,7 +974,7 @@ class sparse_Convolution2D(Layer):
 		self.nb_filter = nb_filter
 		self.nb_row = nb_row
 		self.nb_col = nb_col
-		self.init = initializations.get(init, dim_ordering=dim_ordering)
+		self.init = initializations.get(init)
 		self.activation = activations.get(activation)
 		self.d = d
 		assert border_mode in {'valid', 'same'}, 'border_mode must be in {valid, same}'
@@ -1151,7 +1154,7 @@ class TensorProd2D(Layer):
 			raise Exception('Invalid border mode for Convolution2D:', border_mode)
 		self.input_dim = input_dim
 		self.output_dim = output_dim
-		self.init = initializations.get(init, dim_ordering=dim_ordering)
+		self.init = initializations.get(init)
 		self.activation = activations.get(activation)
 		assert border_mode in {'valid', 'same'}, 'border_mode must be in {valid, same}'
 		self.border_mode = border_mode
