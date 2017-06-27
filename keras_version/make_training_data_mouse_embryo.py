@@ -33,13 +33,13 @@ from pylsm import lsmreader
 
 
 # Define maximum number of training examples
-max_training_examples = 10000000
-window_size_x = 30
-window_size_y = 30
+max_training_examples = 1000000
+window_size_x = 15
+window_size_y = 15
 
 # Load data
 direc_name = '/home/vanvalen/Data/mouse_embryos/'
-file_name_save = os.path.join('/home/vanvalen/DeepCell/training_data_npz/mouse_embryos/', 'mouse_embryos_61x61.npz')
+file_name_save = os.path.join('/home/vanvalen/DeepCell/training_data_npz/mouse_embryos/', 'mouse_embryos_31x31.npz')
 raw_direc = os.path.join(direc_name, "RawData")
 seg_direc = os.path.join(direc_name, "SegmentationMasks")
 
@@ -48,98 +48,105 @@ list_of_seg_files = os.listdir(seg_direc)
 
 channels_list = []
 features_list = []
-for raw_name in [list_of_raw_files[0]]:
-	# try:
-	file_base = os.path.splitext(os.path.basename(raw_name))[0]
-	seg_name = file_base + "_channel=0001_frame=0001_segmentation.tiff"
+lsm_counter = 0
 
-	raw_file_name = os.path.join(raw_direc, raw_name)
-	seg_file_name = os.path.join(seg_direc, seg_name)
-	raw_image_file = lsmreader.Lsmimage(raw_file_name)
+for raw_name in list_of_raw_files:
+	print lsm_counter
+	if lsm_counter < 5:
+		try:
+			file_base = os.path.splitext(os.path.basename(raw_name))[0]
+			seg_name = file_base + "_channel=0001_frame=0001_segmentation.tiff"
 
-	# try:
-	raw_image_file.open()
-	print raw_file_name
-	vx = raw_image_file.image['data'][0].shape[0]
-	vy = raw_image_file.image['data'][0].shape[1]
-	vz = raw_image_file.image['data'][0].shape[2]
-	num_channels = len(raw_image_file.image['data'])
+			raw_file_name = os.path.join(raw_direc, raw_name)
+			seg_file_name = os.path.join(seg_direc, seg_name)
+			raw_image_file = lsmreader.Lsmimage(raw_file_name)
 
-	channels_temp = np.zeros((vz, num_channels, vx, vy), dtype = 'float32')
-	for zpos in xrange(vz):
-		for channel in xrange(num_channels):
-			channel_img = np.flipud(raw_image_file.get_image(stack = zpos, channel = channel))
-			channel_img = np.float32(channel_img)
-			p50 = np.percentile(channel_img, 50)
-			channel_img /= p50
+			raw_image_file.open()
+			print raw_file_name
+			image_size_x = raw_image_file.image['data'][0].shape[0]
+			image_size_y = raw_image_file.image['data'][0].shape[1]
+			image_size_z = raw_image_file.image['data'][0].shape[2]
+			num_channels = len(raw_image_file.image['data'])
 
-			avg_kernel = np.ones((2*window_size_x + 1, 2*window_size_y + 1))
-			channel_img -= ndimage.convolve(channel_img, avg_kernel)/avg_kernel.size
+			channels_temp = np.zeros((image_size_z, num_channels, image_size_x, image_size_y), dtype = 'float32')
+			for zpos in xrange(image_size_z):
+				for channel in xrange(num_channels):
+					channel_img = raw_image_file.get_image(stack = zpos, channel = channel)
+					channel_img = np.float32(channel_img)
+					# p50 = np.percentile(channel_img[np.nonzero(channel_img)], 50)
+					channel_img /= 255
 
-			channels_temp[zpos, channel, :, :] = channel_img
+					avg_kernel = np.ones((2*window_size_x + 1, 2*window_size_y + 1))
+					channel_img -= ndimage.convolve(channel_img, avg_kernel)/avg_kernel.size
 
-	seg_image = get_image(seg_file_name)
+					channels_temp[zpos, channel, :, :] = channel_img
 
-	seg_edge = np.zeros(seg_image.shape)
-	seg_interior = np.zeros(seg_image.shape)
-	seg_background = np.zeros(seg_image.shape)
-	features_temp = np.zeros((vz, 3, vx, vy))
+			seg_image = get_image(seg_file_name)
 
-	for zpos in xrange(vz):
-		seg_img = seg_image[zpos,:,:]
-		seg_img_erode = morph.erosion(seg_img, morph.disk(2))
+			seg_edge = np.zeros(seg_image.shape)
+			seg_interior = np.zeros(seg_image.shape)
+			seg_background = np.zeros(seg_image.shape)
+			features_temp = np.zeros((image_size_z, 3, image_size_x, image_size_y))
 
-		seg_edge_temp = seg_img-seg_img_erode
-		seg_edge_temp[seg_edge_temp>0] = 1
-		seg_edge[zpos,:,:] = seg_edge_temp
+			for zpos in xrange(image_size_z):
+				seg_img = seg_image[zpos,:,:]
+				seg_img_erode = morph.erosion(seg_img, morph.disk(2))
 
-		seg_int_temp = seg_img
-		seg_int_temp[seg_int_temp > 1] = 1
-		seg_int_temp -= seg_edge_temp
-		seg_int_temp[seg_int_temp>0] = 1
-		seg_int_temp[seg_int_temp<0] = 0
-		seg_interior[zpos,:,:] = seg_int_temp
+				seg_edge_temp = seg_img-seg_img_erode
+				seg_edge_temp[seg_edge_temp>0] = 1
+				seg_edge[zpos,:,:] = seg_edge_temp
 
-		seg_back_temp = np.ones(seg_int_temp.shape) - seg_int_temp - seg_edge_temp
-		seg_back_temp[seg_back_temp<0] = 0
-		seg_background[zpos,:,:] = seg_back_temp
+				seg_int_temp = seg_img
+				seg_int_temp[seg_int_temp > 1] = 1
+				seg_int_temp -= seg_edge_temp
+				seg_int_temp[seg_int_temp>0] = 1
+				seg_int_temp[seg_int_temp<0] = 0
+				seg_interior[zpos,:,:] = seg_int_temp
 
-		features_temp[zpos, 0, :, :]= seg_edge_temp
-		features_temp[zpos, 1, :, :]= seg_int_temp
-		features_temp[zpos, 2, :, :]= seg_background_temp
+				seg_back_temp = np.ones(seg_int_temp.shape) - seg_int_temp - seg_edge_temp
+				seg_back_temp[seg_back_temp<0] = 0
+				seg_background[zpos,:,:] = seg_back_temp
 
-	channels_list += [channels_temp]
-	features_list += [features_temp]
+				features_temp[zpos, 0, :, :]= seg_edge_temp
+				features_temp[zpos, 1, :, :]= seg_int_temp
+				features_temp[zpos, 2, :, :]= seg_back_temp
 
-	# except:
-	# 	pass
+			channels_list += [channels_temp]
+			features_list += [features_temp]
+			lsm_counter += 1
+		except:
+			pass
 
-print channels_list
 channels = np.concatenate(channels_list)
 feature_mask = np.concatenate(features_list)
 
+# This vector identifies which features are edges and which ones arent (1 for an edge, 0 if not an edge)
+is_edge_feature = [1,0,0]
 
-# #Plot segementation results
+# Specify the number of feature masks that are present
+num_of_features = 2
 
-# fig,ax = plt.subplots(len(training_direcs),num_of_features+2, squeeze = False)
-# print ax.shape
-# for j in xrange(len(training_direcs)):
-# 	ax[j,0].imshow(channels[j,0,:,:],cmap=plt.cm.gray,interpolation='nearest')
-# 	def form_coord(x,y):
-# 		return cf(x,y,channels[j,0,:,:])
-# 	ax[j,0].format_coord = form_coord
-# 	ax[j,0].axes.get_xaxis().set_visible(False)
-# 	ax[j,0].axes.get_yaxis().set_visible(False)
+#Plot segementation results
 
-# 	for k in xrange(1,num_of_features+2):
-# 		ax[j,k].imshow(feature_mask[j,k-1,:,:],cmap=plt.cm.gray,interpolation='nearest')
-# 		def form_coord(x,y):
-# 			return cf(x,y,feature_mask[j,k-1,:,:])
-# 		ax[j,k].format_coord = form_coord
-# 		ax[j,k].axes.get_xaxis().set_visible(False)
-# 		ax[j,k].axes.get_yaxis().set_visible(False)
+fig,ax = plt.subplots(5,num_of_features+2, squeeze = False)
+print ax.shape
+for j in xrange(5):
+	ax[j,0].imshow(channels[j,0,:,:],cmap=plt.cm.gray,interpolation='nearest')
+	def form_coord(x,y):
+		return cf(x,y,channels[j,0,:,:])
+	ax[j,0].format_coord = form_coord
+	ax[j,0].axes.get_xaxis().set_visible(False)
+	ax[j,0].axes.get_yaxis().set_visible(False)
 
-# plt.show()
+	for k in xrange(1,num_of_features+2):
+		ax[j,k].imshow(feature_mask[j,k-1,:,:],cmap=plt.cm.gray,interpolation='nearest')
+		def form_coord(x,y):
+			return cf(x,y,feature_mask[j,k-1,:,:])
+		ax[j,k].format_coord = form_coord
+		ax[j,k].axes.get_xaxis().set_visible(False)
+		ax[j,k].axes.get_yaxis().set_visible(False)
+
+plt.show()
 
 
 """
@@ -149,7 +156,6 @@ Select points for training data
 # Find out how many example pixels exist for each feature and select the feature
 # the fewest examples
 feature_mask_trimmed = feature_mask[:,:,window_size_x+1:-window_size_x-1,window_size_y+1:-window_size_y-1] 
-print feature_mask_trimmed.shape
 feature_rows = []
 feature_cols = []
 feature_batch = []
@@ -157,27 +163,21 @@ feature_label = []
 
 # We need to find the training data set with the least number of edge pixels. We will then sample
 # that number of pixels from each of the training data sets (if possible)
-
 edge_num = np.Inf
-for j in xrange(feature_mask_trimmed.shape[0]):
-	num_of_edge_pixels = 0
-	for k in xrange(len(is_edge_feature)):
-		if is_edge_feature[k] == 1:
-			num_of_edge_pixels += np.sum(feature_mask_trimmed[j,k,:,:])
 
-	if num_of_edge_pixels < edge_num:
-		edge_num = num_of_edge_pixels
+for k in xrange(len(is_edge_feature)):
+	if is_edge_feature[k] == 1:
+		num_of_edge_pixels = np.sum(feature_mask_trimmed[:,k,:,:])
+
+if num_of_edge_pixels < edge_num:
+	edge_num = num_of_edge_pixels
 
 min_pixel_counter = edge_num
 
-print min_pixel_counter
-
 for direc in xrange(channels.shape[0]):
-
 	for k in xrange(num_of_features + 1):
 		feature_counter = 0
 		feature_rows_temp, feature_cols_temp = np.where(feature_mask[direc,k,:,:] == 1)
-
 		# Check to make sure the features are actually present
 		if len(feature_rows_temp) > 0:
 
@@ -199,7 +199,6 @@ feature_rows = np.array(feature_rows,dtype = 'int32')
 feature_cols = np.array(feature_cols,dtype = 'int32')
 feature_batch = np.array(feature_batch, dtype = 'int32')
 feature_label = np.array(feature_label, dtype = 'int32')
-
 
 print feature_rows.shape, feature_cols.shape, feature_batch.shape, feature_label.shape
 print np.amax(feature_label)

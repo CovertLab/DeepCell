@@ -228,7 +228,7 @@ def combinations(array):
 
 	return comb, np.array(list(y))
 
-def process_image(channel_img, win_x, win_y, std = False):
+def process_image(channel_img, win_x, win_y, std = False, remove_zeros = False):
 
 	if std:
 		avg_kernel = np.ones((2*win_x + 1, 2*win_y + 1))
@@ -237,12 +237,17 @@ def process_image(channel_img, win_x, win_y, std = False):
 		channel_img /= std
 		return channel_img
 
+	if remove_zeros:
+		channel_img /= 255
+		avg_kernel = np.ones((2*win_x + 1, 2*win_y + 1))
+		channel_img -= ndimage.convolve(channel_img, avg_kernel)/avg_kernel.size
+		return channel_img
+
 	else:
 		p50 = np.percentile(channel_img, 50)
 		channel_img /= p50
 		avg_kernel = np.ones((2*win_x + 1, 2*win_y + 1))
 		channel_img -= ndimage.convolve(channel_img, avg_kernel)/avg_kernel.size
-
 		return channel_img
 
 def tensorprod_softmax(x):
@@ -1509,6 +1514,87 @@ def run_models_on_directory(data_location, channel_names, output_location, model
 		_UID_PREFIXES[key] = 0
 
 	return model_output
+
+def run_model_on_lsm(lsm_file, output_location, model, win_x = 15, win_y = 15, std = False, split = True, save = True):
+	n_features = model.layers[-1].output_shape[1]
+	counter = 0
+
+	from pylsm import lsmreader
+	raw_image_file = lsmreader.Lsmimage(lsm_file)
+	raw_image_file.open()
+
+	image_size_x = raw_image_file.image['data'][0].shape[0]
+	image_size_y = raw_image_file.image['data'][0].shape[1]
+	image_size_z = raw_image_file.image['data'][0].shape[2]
+	num_channels = len(raw_image_file.image['data'])
+
+	channels = np.zeros((image_size_z, num_channels, image_size_x, image_size_y), dtype = 'float32')
+	processed_image_list = []
+
+	for zpos in xrange(image_size_z):
+		for channel in xrange(num_channels):
+			channel_img = raw_image_file.get_image(stack = zpos, channel = channel)
+			channel_img = np.float32(channel_img)
+			channel_img = process_image(channel_img, win_x, win_y, remove_zeros = True)
+			channels[zpos, channel, :, :] = channel_img
+
+	for zpos in xrange(image_size_z):
+		print "Processing image " + str(counter + 1) + " of " + str(image_size_z)
+		image = np.zeros((1, num_channels, image_size_x, image_size_y))
+		image[0,:,:,:] = channels[zpos,:,:,:]
+		processed_image = run_model(image, model, win_x = win_x, win_y = win_y, std = std, split = split, process = False)
+		processed_image_list += [processed_image]
+
+		# Save images
+		if save:
+			for feat in xrange(n_features):
+				feature = processed_image[feat,:,:]
+				cnnout_name = os.path.join(output_location, 'feature_' + str(feat) +"_frame_"+ str(counter) + r'.tif')
+				tiff.imsave(cnnout_name,feature)
+		counter += 1
+
+	return processed_image_list
+
+def run_models_on_lsm(lsm_file, output_location, model_fn, list_of_weights, n_features = 3, image_size_x = 512, image_size_y = 512, win_x = 15, win_y = 15, std = False, split = True, save = True):
+
+	from pylsm import lsmreader
+	raw_image_file = lsmreader.Lsmimage(lsm_file)
+	raw_image_file.open()
+
+	image_size_x = raw_image_file.image['data'][0].shape[0]
+	image_size_y = raw_image_file.image['data'][0].shape[1]
+	image_size_z = raw_image_file.image['data'][0].shape[2]
+	num_channels = len(raw_image_file.image['data'])
+
+	batch_input_shape = (1,num_channels,image_size_x+win_x, image_size_y+win_y)
+	model = model_fn(batch_input_shape = batch_input_shape, n_features = n_features, weights_path = list_of_weights[0])
+	n_features = model.layers[-1].output_shape[1]
+
+	model_outputs = []
+	for weights_path in list_of_weights:
+		model = set_weights(model, weights_path = weights_path)
+		processed_image_list= run_model_on_lsm(lsm_file, output_location, model, win_x = win_x, win_y = win_y, save = True, std = std, split = split)
+		model_outputs += [np.stack(processed_image_list, axis = 0)]
+
+	# Average all images
+	model_output = np.stack(model_outputs, axis = 0)
+	model_output = np.mean(model_output, axis = 0)
+
+	# Save images
+	if save:
+		for img in xrange(model_output.shape[0]):
+			for feat in xrange(n_features):
+				feature = model_output[img,feat,:,:]
+				cnnout_name = os.path.join(output_location, 'feature_' + str(feat) + "_frame_" + str(img) + r'.tif')
+				tiff.imsave(cnnout_name,feature)
+
+	from keras.backend.common import _UID_PREFIXES
+	for key in _UID_PREFIXES:
+		_UID_PREFIXES[key] = 0
+
+	return model_output
+
+
 
 
 """
