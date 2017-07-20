@@ -362,6 +362,47 @@ def sparse_feature_net_101x101(batch_input_shape = (1,2,1080,1280), n_features =
 
 	return model
 
+def feature_net_174x174(n_channels = 1, n_features = 2, reg = 1e-3, init = 'he_normal'):
+	print "Using feature net 174x174"
+
+	model = Sequential()
+	model.add(Convolution2D(32,3,3, init = init, border_mode = 'valid', input_shape = (n_channels, 174,174), W_regularizer = l2(reg)))
+	model.add(Activation('relu'))
+	model.add(Convolution2D(32, 3, 3, init = init, border_mode = 'valid', W_regularizer = l2(reg)))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+
+	model.add(Convolution2D(64, 4, 4, init = init, border_mode = 'valid', W_regularizer = l2(reg)))
+	model.add(Activation('relu'))
+	model.add(Convolution2D(64, 3, 3, init = init, border_mode = 'valid', W_regularizer = l2(reg)))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+
+	model.add(Convolution2D(128, 3, 3, init = init, border_mode = 'valid', W_regularizer = l2(reg)))
+	model.add(Activation('relu'))
+	model.add(Convolution2D(128, 3, 3, init = init, border_mode = 'valid', W_regularizer = l2(reg)))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+
+	model.add(Convolution2D(256, 3, 3, init = init, border_mode = 'valid', W_regularizer = l2(reg)))
+	model.add(Activation('relu'))
+	model.add(Convolution2D(256, 3, 3, init = init, border_mode = 'valid', W_regularizer = l2(reg)))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+
+	model.add(Convolution2D(256, 3, 3, init = init, border_mode = 'valid', W_regularizer = l2(reg)))
+	model.add(Activation('relu'))
+
+	model.add(Flatten())
+
+	model.add(Dense(512, init = init, W_regularizer = l2(reg)))
+	model.add(Activation('relu'))
+
+	model.add(Dense(n_features, init = init, W_regularizer = l2(reg)))
+	model.add(Activation('softmax'))
+	return model
+
+
 """
 Batch normalized convnets
 """
@@ -679,6 +720,56 @@ def sparse_bn_feature_net_81x81(batch_input_shape = (1,2,1080,1280), n_features 
 
 	model = set_weights(model, weights_path)
 
+	return model
+
+def bn_feature_net_174x174(n_channels = 1, n_features = 2, reg = 1e-5, init = 'he_normal'):
+	print "Using feature net 174x174 with batch normalization"
+
+	model = Sequential()
+	model.add(Convolution2D(32,3,3, init = init, border_mode = 'valid', input_shape = (n_channels, 174,174), W_regularizer = l2(reg)))
+	model.add(BatchNormalization(axis = 1))
+	model.add(Activation('relu'))
+	model.add(Convolution2D(32, 3, 3, init = init, border_mode = 'valid', W_regularizer = l2(reg)))
+	model.add(BatchNormalization(axis = 1))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+
+	model.add(Convolution2D(64, 4, 4, init = init, border_mode = 'valid', W_regularizer = l2(reg)))
+	model.add(BatchNormalization(axis = 1))
+	model.add(Activation('relu'))
+	model.add(Convolution2D(64, 3, 3, init = init, border_mode = 'valid', W_regularizer = l2(reg)))
+	model.add(BatchNormalization(axis = 1))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+
+	model.add(Convolution2D(128, 3, 3, init = init, border_mode = 'valid', W_regularizer = l2(reg)))
+	model.add(BatchNormalization(axis = 1))
+	model.add(Activation('relu'))
+	model.add(Convolution2D(128, 3, 3, init = init, border_mode = 'valid', W_regularizer = l2(reg)))
+	model.add(BatchNormalization(axis = 1))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+
+	model.add(Convolution2D(256, 3, 3, init = init, border_mode = 'valid', W_regularizer = l2(reg)))
+	model.add(BatchNormalization(axis = 1))
+	model.add(Activation('relu'))
+	model.add(Convolution2D(256, 3, 3, init = init, border_mode = 'valid', W_regularizer = l2(reg)))
+	model.add(BatchNormalization(axis = 1))
+	model.add(Activation('relu'))
+	model.add(MaxPooling2D(pool_size=(2, 2)))
+
+	model.add(Convolution2D(256, 3, 3, init = init, border_mode = 'valid', W_regularizer = l2(reg)))
+	model.add(BatchNormalization(axis = 1))
+	model.add(Activation('relu'))
+
+	model.add(Flatten())
+
+	model.add(Dense(512, init = init, W_regularizer = l2(reg)))
+	model.add(BatchNormalization(axis = 1))
+	model.add(Activation('relu'))
+
+	model.add(Dense(n_features, init = init, W_regularizer = l2(reg)))
+	model.add(Activation('softmax'))
 	return model
 
 """
